@@ -10,6 +10,9 @@ export type Sight = {
         latitude: number;
         longitude: number;
     };
+    reservationUrl?: string;
+    phoneNumber?: string;
+    tags?: string[];
 };
 
 export const SIGHTS: Sight[] = [
@@ -55,7 +58,7 @@ export const SIGHTS: Sight[] = [
         image: require('@/assets/images/sights/barrage-vauban.jpg'),
         category: 'sights',
         // Updated
-        location: 'Pl. du Qur Blanc',
+        location: 'Pl. du Quartier Blanc',
         coordinates: { latitude: 48.579601192743404, longitude: 7.738016252519863 }
     },
     // Secondary Sights

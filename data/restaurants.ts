@@ -8,7 +8,8 @@ export const RESTAURANTS = [
         location: '24 Rue du Vieux-Marché-aux-Vins',
         coordinates: { latitude: 48.58391149125845, longitude: 7.742376614404617 },
         category: 'restaurants',
-        tags: ['restaurant', 'bar', 'international']
+        tags: ['restaurant', 'bar', 'international'],
+        reservationUrl: 'https://www.thedrunkystorksocialclub.com/reservation'
     },
     {
         id: 'madame-julia',
@@ -41,7 +42,8 @@ export const RESTAURANTS = [
         location: '21 Quai Saint-Nicolas',
         coordinates: { latitude: 48.57897167437625, longitude: 7.750302856674601 },
         category: 'restaurants',
-        tags: ['restaurant', 'traditional']
+        tags: ['restaurant', 'traditional'],
+        phoneNumber: '+33 3 88 35 60 68'
     },
     {
         id: 'tire-bouchon',
@@ -52,7 +54,9 @@ export const RESTAURANTS = [
         location: '5 Rue des Tailleurs de Pierre',
         coordinates: { latitude: 48.580603951556775, longitude: 7.75070110339707 },
         category: 'restaurants',
-        tags: ['restaurant', 'traditional']
+        tags: ['restaurant', 'traditional'],
+        phoneNumber: '+33 3 88 22 16 32',
+        reservationUrl: 'https://www.letirebouchon.fr/reserver'
     },
     {
         id: 'maison-kammerzell',
@@ -63,7 +67,9 @@ export const RESTAURANTS = [
         location: '16 Place de la Cathédrale',
         coordinates: { latitude: 48.581925042051445, longitude: 7.749813091103637 },
         category: 'restaurants',
-        tags: ['restaurant', 'traditional']
+        tags: ['restaurant', 'traditional'],
+        reservationUrl: 'https://www.maison-kammerzell.com/reservation',
+        phoneNumber: '+33 3 88 32 42 14'
     },
     {
         id: 'petite-alsace',
@@ -74,7 +80,8 @@ export const RESTAURANTS = [
         location: '23 Rue du Bain-aux-Plantes',
         coordinates: { latitude: 48.581629299183746, longitude: 7.741587839956232 },
         category: 'restaurants',
-        tags: ['restaurant', 'traditional']
+        tags: ['restaurant', 'traditional'],
+        phoneNumber: '+33 3 88 22 04 05'
     },
     {
         id: 'le-vintage',
@@ -85,7 +92,9 @@ export const RESTAURANTS = [
         location: '15 Rue des Serruriers',
         coordinates: { latitude: 48.580315931238324, longitude: 7.746479945972407 },
         category: 'restaurants',
-        tags: ['restaurant', 'bar', 'traditional']
+        tags: ['restaurant', 'bar', 'traditional'],
+        reservationUrl: 'https://www.thefork.fr/restaurant/le-vintage-r423365',
+        phoneNumber: '+33 9 83 63 49 42'
     },
     {
         id: 'la_hache',
@@ -96,7 +105,9 @@ export const RESTAURANTS = [
         location: '11 Rue de la Douane',
         coordinates: { latitude: 48.579481569836005, longitude: 7.749187933893192 },
         category: 'restaurants',
-        tags: ['restaurant', 'international']
+        tags: ['restaurant', 'international'],
+        phoneNumber: '+33 3 88 32 34 32',
+        reservationUrl: 'https://www.la-hache.com/'
     },
     {
         id: 'le-gruber',
@@ -107,7 +118,9 @@ export const RESTAURANTS = [
         location: '11 Rue du Maroquin',
         coordinates: { latitude: 48.5808019848284, longitude: 7.750513470003923 },
         category: 'restaurants',
-        tags: ['restaurant', 'traditional']
+        tags: ['restaurant', 'traditional'],
+        reservationUrl: 'https://bookings.zenchef.com/results?rid=95052&fullscreen&lang=fr',
+        phoneNumber: '+33 3 88 32 23 11'
     },
     {
         id: 'au-brasseur',
@@ -118,7 +131,8 @@ export const RESTAURANTS = [
         location: '22 Rue des Veaux',
         coordinates: { latitude: 48.58262125261885, longitude: 7.755496791128475 },
         category: 'restaurants',
-        tags: ['restaurant', 'bar', 'traditional']
+        tags: ['restaurant', 'bar', 'traditional'],
+        phoneNumber: '+33 3 88 36 12 13'
     },
     {
         id: 'au-cedre',
@@ -129,7 +143,9 @@ export const RESTAURANTS = [
         location: '1 Rue du Saint-Gothard',
         coordinates: { latitude: 48.57893092622192, longitude: 7.756780989329303 },
         category: 'restaurants',
-        tags: ['restaurant', 'international']
+        tags: ['restaurant', 'international'],
+        reservationUrl: 'https://au-cedre.com/',
+        phoneNumber: '+33 3 88 25 14 69'
     },
     {
         id: 'east-canteen',
@@ -140,7 +156,8 @@ export const RESTAURANTS = [
         location: '2 Pl. des Orphelins',
         coordinates: { latitude: 48.579155281572596, longitude: 7.754414437438409 },
         category: 'restaurants',
-        tags: ['restaurant', 'international']
+        tags: ['restaurant', 'international'],
+        reservationUrl: 'https://eastcanteen.com/'
     },
     {
         id: 'aygui',
@@ -151,7 +168,9 @@ export const RESTAURANTS = [
         location: '5 Rue du Faubourg-de-Saverne',
         coordinates: { latitude: 48.584739477495084, longitude: 7.740538417045209 },
         category: 'restaurants',
-        tags: ['restaurant', 'international']
+        tags: ['restaurant', 'international'],
+        reservationUrl: 'https://gusty.app/booking/actif-s?iframe=oui&source=SITE',
+        phoneNumber: '+33 9 85 02 64 91'
     },
     {
         id: 'cinnamon',
@@ -162,6 +181,8 @@ export const RESTAURANTS = [
         location: '15 Rue de la Division Leclerc',
         coordinates: { latitude: 48.57969762204584, longitude: 7.748043863292592 },
         category: 'restaurants',
-        tags: ['restaurant', 'international']
+        tags: ['restaurant', 'international'],
+        reservationUrl: 'https://cinnamonrestaurant.fr/reservation/',
+        phoneNumber: '+33 3 88 32 89 79'
     }
 ];

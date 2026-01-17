@@ -20,13 +20,20 @@ const MAPPING = {
   'chevron.right': 'chevron-right',
   // Transport Screen Icons
   'xmark': 'close',
+  'xmark.circle.fill': 'cancel',
   'map': 'map',
+  'map.fill': 'map',
   'tram.fill': 'tram',
   'bus.fill': 'directions-bus',
   'info.circle': 'info',
   'arrow.up.right': 'arrow-outward',
   'arrow.left': 'arrow-back',
   'book.fill': 'book',
+  'star.fill': 'star',
+  'fork.knife': 'restaurant',
+  'building.columns.fill': 'museum',
+  'figure.walk': 'directions-walk',
+  'camera.fill': 'camera-alt',
 } as IconMapping;
 
 /**

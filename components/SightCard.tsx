@@ -9,9 +9,10 @@ import { Animated, Image, Pressable, StyleSheet, Text, View } from 'react-native
 type SightCardProps = {
     sight: Sight;
     onPress: () => void;
+    style?: any;
 };
 
-export const SightCard = React.memo(({ sight, onPress }: SightCardProps) => {
+export const SightCard = React.memo(({ sight, onPress, style }: SightCardProps) => {
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'light'];
     const scale = useRef(new Animated.Value(1)).current;
@@ -30,12 +31,15 @@ export const SightCard = React.memo(({ sight, onPress }: SightCardProps) => {
         }).start();
     };
 
+    // Find category color
+    const categoryColor = CATEGORIES.find(c => c.nameKey === sight.category)?.color || theme.tint;
+
     return (
         <Pressable
             onPress={onPress}
             onPressIn={handlePressIn}
             onPressOut={handlePressOut}
-            style={{ marginBottom: 16 }}
+            style={[styles.container, style]}
         >
             <Animated.View style={[
                 styles.card,
@@ -45,20 +49,16 @@ export const SightCard = React.memo(({ sight, onPress }: SightCardProps) => {
                     transform: [{ scale }]
                 }
             ]}>
-                <Image source={sight.image} style={styles.image} />
-                <View style={styles.content}>
-                    <View style={styles.header}>
-                        <View style={[
-                            styles.categoryChip,
-                            { backgroundColor: CATEGORIES.find(c => c.nameKey === sight.category)?.color || theme.tint }
-                        ]}>
-                            <Text style={styles.categoryText}>{i18n.t(sight.category).toUpperCase()}</Text>
-                        </View>
+                <View style={styles.imageContainer}>
+                    <Image source={sight.image} style={styles.image} resizeMode="cover" />
+                    <View style={[styles.categoryBadge, { backgroundColor: categoryColor }]}>
+                        <Text style={styles.categoryText}>{i18n.t(sight.category).toUpperCase()}</Text>
                     </View>
-                    <Text style={[styles.title, { color: theme.text }]}>{sight.name}</Text>
-                    <Text style={[styles.description, { color: theme.icon }]} numberOfLines={2}>
-                        {sight.shortDescription}
-                    </Text>
+                </View>
+
+                <View style={styles.content}>
+                    <Text style={[styles.title, { color: theme.text }]} numberOfLines={2}>{sight.name}</Text>
+                    {/* Optional: Add rating or location here if desired for playing card look */}
                 </View>
             </Animated.View>
         </Pressable>
@@ -66,52 +66,55 @@ export const SightCard = React.memo(({ sight, onPress }: SightCardProps) => {
 });
 
 const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        marginBottom: 16,
+        marginHorizontal: 8, // Add gap between columns
+    },
     card: {
         borderRadius: 16,
         overflow: 'hidden',
         borderWidth: 1,
-        marginBottom: 16,
-        elevation: 2,
+        elevation: 3,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
-        shadowRadius: 8,
+        shadowRadius: 4,
+        height: 240, // Fixed height for "playing card" aspect ratio
+    },
+    imageContainer: {
+        height: '70%', // Image takes up most of the card
+        width: '100%',
+        position: 'relative',
     },
     image: {
         width: '100%',
-        height: 200,
-        backgroundColor: '#eee',
+        height: '100%',
     },
-    content: {
-        padding: 16,
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 8,
-    },
-    categoryChip: {
-        alignSelf: 'flex-start',
+    categoryBadge: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
         paddingHorizontal: 8,
         paddingVertical: 4,
-        borderRadius: 6,
-        marginBottom: 8,
+        borderRadius: 8,
+        elevation: 2,
     },
     categoryText: {
-        fontSize: 10,
-        fontWeight: '700',
-        letterSpacing: 1,
-        color: '#2D2A26', // Dark text for pastel
+        fontSize: 9,
+        fontWeight: '800',
+        color: '#222',
+        letterSpacing: 0.5,
+    },
+    content: {
+        padding: 12,
+        height: '30%',
+        justifyContent: 'center',
     },
     title: {
-        fontSize: 20,
+        fontSize: 16,
         fontWeight: '700',
-        marginBottom: 8,
-        fontFamily: 'System', // Fallback
-    },
-    description: {
-        fontSize: 15,
-        lineHeight: 20,
+        textAlign: 'center', // Center title like a card label
+        fontFamily: 'System',
     },
 });

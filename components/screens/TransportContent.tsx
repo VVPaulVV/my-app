@@ -332,7 +332,7 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((_, re
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
-    scrollContent: { paddingBottom: 40 },
+    scrollContent: { paddingBottom: 70 },
     header: {
         paddingVertical: 12,
         paddingLeft: 24,

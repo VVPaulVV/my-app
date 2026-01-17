@@ -148,6 +148,87 @@ export default function SightDetailScreen() {
                         {sight.description || sight.shortDescription}
                     </Text>
 
+                    {/* Reservation Section (Restaurants Only) */}
+                    {sight.category === 'restaurants' && (
+                        <View style={{ marginTop: 24, marginBottom: 8 }}>
+                            <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 12 }]}>Reservation</Text>
+
+                            {/* Logic: 
+                                1. If BOTH exist, show both vertically.
+                                2. If only one exists, show valid one active + other one GRAYED OUT.
+                                3. If NONE exist, show "No reservation possibility".
+                            */}
+
+                            {((sight as any).reservationUrl || (sight as any).phoneNumber) ? (
+                                <View style={{ gap: 12 }}>
+                                    {/* Web Reservation Button */}
+                                    <TouchableOpacity
+                                        disabled={!(sight as any).reservationUrl}
+                                        style={{
+                                            backgroundColor: (sight as any).reservationUrl ? theme.primary : theme.border,
+                                            paddingVertical: 14,
+                                            paddingHorizontal: 20,
+                                            borderRadius: 12,
+                                            alignItems: 'center',
+                                            flexDirection: 'row',
+                                            justifyContent: 'center',
+                                            shadowColor: (sight as any).reservationUrl ? theme.primary : 'transparent',
+                                            shadowOffset: { width: 0, height: 4 },
+                                            shadowOpacity: (sight as any).reservationUrl ? 0.3 : 0,
+                                            shadowRadius: 8,
+                                            elevation: (sight as any).reservationUrl ? 4 : 0
+                                        }}
+                                        onPress={() => (sight as any).reservationUrl && Linking.openURL((sight as any).reservationUrl)}
+                                    >
+                                        <Ionicons name="calendar-outline" size={20} color={(sight as any).reservationUrl ? "#FFF" : theme.textSecondary} style={{ marginRight: 8 }} />
+                                        <Text style={{ color: (sight as any).reservationUrl ? "#FFF" : theme.textSecondary, fontWeight: 'bold', fontSize: 16 }}>
+                                            {(sight as any).reservationUrl ? "Reserve Online" : "Online Booking Unavailable"}
+                                        </Text>
+                                        {(sight as any).reservationUrl && <Ionicons name="arrow-forward" size={16} color="#FFF" style={{ marginLeft: 8, opacity: 0.8 }} />}
+                                    </TouchableOpacity>
+
+                                    {/* Phone Reservation Button */}
+                                    <TouchableOpacity
+                                        disabled={!(sight as any).phoneNumber}
+                                        style={{
+                                            backgroundColor: (sight as any).phoneNumber ? theme.background : theme.border, // White if active, Gray if disabled
+                                            borderColor: (sight as any).phoneNumber ? theme.primary : 'transparent',
+                                            borderWidth: (sight as any).phoneNumber ? 2 : 0,
+                                            paddingVertical: 14,
+                                            paddingHorizontal: 20,
+                                            borderRadius: 12,
+                                            alignItems: 'center',
+                                            flexDirection: 'row',
+                                            justifyContent: 'center',
+                                        }}
+                                        onPress={() => (sight as any).phoneNumber && Linking.openURL(`tel:${(sight as any).phoneNumber}`)}
+                                    >
+                                        <Ionicons name="call-outline" size={20} color={(sight as any).phoneNumber ? theme.primary : theme.textSecondary} style={{ marginRight: 8 }} />
+                                        <Text style={{ color: (sight as any).phoneNumber ? theme.primary : theme.textSecondary, fontWeight: 'bold', fontSize: 16 }}>
+                                            {(sight as any).phoneNumber ? "Call to Reserve" : "Phone Booking Unavailable"}
+                                        </Text>
+                                        {(sight as any).phoneNumber && <Text style={{ color: theme.textSecondary, fontSize: 14, marginLeft: 8 }}>{(sight as any).phoneNumber}</Text>}
+                                    </TouchableOpacity>
+                                </View>
+                            ) : (
+                                <View style={{
+                                    backgroundColor: theme.cardBackground,
+                                    borderColor: theme.border,
+                                    borderWidth: 1,
+                                    paddingVertical: 14,
+                                    paddingHorizontal: 20,
+                                    borderRadius: 12,
+                                    alignItems: 'center',
+                                    flexDirection: 'row',
+                                    justifyContent: 'center'
+                                }}>
+                                    <Ionicons name="information-circle-outline" size={20} color={theme.textSecondary} style={{ marginRight: 8 }} />
+                                    <Text style={{ color: theme.textSecondary, fontSize: 14, fontWeight: '500' }}>No reservation possibility</Text>
+                                </View>
+                            )}
+                        </View>
+                    )}
+
                     {/* Map Section */}
                     {sight.coordinates && (
                         <>
