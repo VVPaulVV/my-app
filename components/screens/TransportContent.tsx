@@ -328,7 +328,7 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((_, re
                 </Modal>
 
                 {/* -------------------- FULLSCREEN PARKING MAP -------------------- */}
-                <Modal visible={isParkingMapVisible} onRequestClose={handleCloseParkingMap} animationType="fade" presentationStyle="overFullScreen">
+                <Modal visible={isParkingMapVisible} onRequestClose={handleCloseParkingMap} animationType="fade" transparent={false}>
                     <View style={{ flex: 1, backgroundColor: theme.background }}>
                         <Mapbox.MapView
                             style={{ flex: 1 }}
@@ -614,7 +614,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 50,
         left: 16,
-        right: 16,
+        width: SCREEN_WIDTH - 32,
         zIndex: 200,
         elevation: 200,
     },
