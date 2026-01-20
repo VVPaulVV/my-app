@@ -5,7 +5,7 @@ import { Colors } from '@/constants/theme';
 import { CATEGORIES } from '@/data/categories';
 import { SIGHTS } from '@/data/sights';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import i18n from '@/i18n';
+import i18n, { tData } from '@/i18n';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -31,8 +31,11 @@ export default function ExploreScreen() {
   ];
 
   const filteredItems = allItems.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase()) ||
-      (item as any).location?.toLowerCase().includes(search.toLowerCase());
+    const itemName = tData(item, 'name').toLowerCase();
+    const itemLocation = (tData(item, 'location') || '').toString().toLowerCase();
+    const searchLower = search.toLowerCase();
+
+    const matchesSearch = itemName.includes(searchLower) || itemLocation.includes(searchLower);
 
     if (!category) return matchesSearch;
 

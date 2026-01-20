@@ -1,16 +1,4 @@
-// Safely import AsyncStorage to avoid crashes if native module is missing
-let AsyncStorage: any;
-try {
-    AsyncStorage = require('@react-native-async-storage/async-storage').default;
-} catch (e) {
-    console.warn('AsyncStorage not available, using in-memory mock');
-    const store: Record<string, string> = {};
-    AsyncStorage = {
-        getItem: (key: string) => Promise.resolve(store[key] || null),
-        setItem: (key: string, value: string) => { store[key] = value; return Promise.resolve(); },
-        removeItem: (key: string) => { delete store[key]; return Promise.resolve(); },
-    };
-}
+import storage from '@/utils/storage';
 import { getLocales } from 'expo-localization';
 import { I18n } from 'i18n-js';
 
@@ -101,6 +89,9 @@ const translations = {
         familyTicketDesc: 'The "24h Trio" ticket is valid for 2-3 people for unlimited travel for 24 hours. Best value for small groups!',
         freeTravel: 'Free Travel',
         freeTravelDesc: 'Children under 4 travel for free.',
+        dailyTips: 'Daily Tips',
+        didYouKnow: 'Did you know?',
+        favorites: 'Favorites',
     },
     fr: {
         languageName: 'Français',
@@ -185,6 +176,9 @@ const translations = {
         familyTicketDesc: 'Le ticket "24h Trio" est valable pour 2-3 personnes pour des trajets illimités pendant 24h. Meilleur rapport qualité-prix !',
         freeTravel: 'Voyage Gratuit',
         freeTravelDesc: 'Les enfants de moins de 4 ans voyagent gratuitement.',
+        dailyTips: 'Astuces du Jour',
+        didYouKnow: 'Le saviez-vous ?',
+        favorites: 'Favoris',
     },
     de: {
         languageName: 'Deutsch',
@@ -269,6 +263,9 @@ const translations = {
         familyTicketDesc: 'Das "24h Trio" Ticket gilt für 2-3 Personen für unbegrenzte Fahrten für 24 Stunden. Bester Wert!',
         freeTravel: 'Kostenlose Fahrt',
         freeTravelDesc: 'Kinder unter 4 Jahren reisen kostenlos.',
+        dailyTips: 'Täglich Tipps',
+        didYouKnow: 'Wussten Sie schon?',
+        favorites: 'Favoriten',
     },
     es: {
         languageName: 'Español',
@@ -353,6 +350,9 @@ const translations = {
         familyTicketDesc: 'El billete "24h Trio" es válido para 2-3 personas para viajes ilimitados durante 24 horas. ¡La mejor opción!',
         freeTravel: 'Viaje Gratis',
         freeTravelDesc: 'Los niños menores de 4 años viajan gratis.',
+        dailyTips: 'Consejos Diarios',
+        didYouKnow: '¿Sabía qué?',
+        favorites: 'Favoritos',
     },
     it: {
         languageName: 'Italiano',
@@ -437,6 +437,9 @@ const translations = {
         familyTicketDesc: 'Il biglietto "24h Trio" è valido per 2-3 persone per viaggi illimitati per 24 ore. Miglior valore!',
         freeTravel: 'Viaggio Gratuito',
         freeTravelDesc: 'I bambini sotto i 4 anni viaggiano gratis.',
+        dailyTips: 'Consigli Quotidiani',
+        didYouKnow: 'Lo sapevi?',
+        favorites: 'Preferiti',
     },
     ru: {
         languageName: 'Русский',
@@ -521,6 +524,9 @@ const translations = {
         familyTicketDesc: 'Билет "24h Trio" действител для 2-3 человек на неограниченное количество поездок в течение 24 часов.',
         freeTravel: 'Бесплатный проезд',
         freeTravelDesc: 'Дети до 4 лет путешествуют бесплатно.',
+        dailyTips: 'Советы дня',
+        didYouKnow: 'А вы знали?',
+        favorites: 'Избранное',
     },
     tr: {
         languageName: 'Türkçe',
@@ -573,7 +579,7 @@ const translations = {
         dayTrio: '24 Saatlik Trio (2-3 kişi)',
         threeDayIndividual: '72 Saatlik Bireysel',
         validateMandatory: 'Biletler binmeden önce onaylatılmalıdır.',
-        ticketFeeNote: 'İlk bilet alımı için +0.20 € ücret',
+        ticketFeeNote: '+0.20 € ilk bilet ücreti',
         tapToExpand: 'Genişletmek için Dokun',
         realTimeParking: 'Otopark',
         available: 'Müsait',
@@ -597,7 +603,7 @@ const translations = {
         validationMandatoryNote: 'Her yolculukta (aktarmalar dahil) onaylatma zorunludur.',
         busValidation: 'Normal Otobüsler: Otobüsün içindeki kırmızı makinelerde onaylatın.',
         contactlessValidation: 'Temassız: Kartınızı veya telefonunuzun sarı alana bip sesi gelene kadar tutun.',
-        ticketFeeDetailed: '* İlk kağıt bilet alımında +0.20 € ücret alınır.',
+        ticketFeeDetailed: '* İlk kağıt bilet alımında +0.20 € ücret ödenecektir.',
         travelTips: 'Seyahat İpuçları',
         airportConnection: 'Havalimanı Bağlantısı',
         airportConnectionDesc: 'Entzheim Havalimanı\'ndan Strazburg İstasyonu\'na giden trene binin (9 dk).',
@@ -605,6 +611,9 @@ const translations = {
         familyTicketDesc: '"24h Trio" bileti, 24 saat boyunca 2-3 kişi için sınırsız seyahat sağlar. En iyi seçenek!',
         freeTravel: 'Ücretsiz Seyahat',
         freeTravelDesc: '4 yaşından küçük çocuklar ücretsiz seyahat eder.',
+        dailyTips: 'Günlük İpuçları',
+        didYouKnow: 'Biliyor muydunuz?',
+        favorites: 'Favoriler',
     },
 
     pt: {
@@ -690,6 +699,9 @@ const translations = {
         familyTicketDesc: 'O bilhete "24h Trio" é válido para 2-3 pessoas para viagens ilimitadas por 24 horas. Melhor valor!',
         freeTravel: 'Viagem Gratuita',
         freeTravelDesc: 'Crianças menores de 4 anos viajam de graça.',
+        dailyTips: 'Dicas Diárias',
+        didYouKnow: 'Você sabia?',
+        favorites: 'Favoritos',
     }
 };
 
@@ -708,7 +720,7 @@ export const tData = (item: any, field: string) => {
 i18n.defaultLocale = 'en';
 i18n.enableFallback = true;
 // Initial setting
-i18n.locale = getLocales()[0].languageCode ?? 'en';
+i18n.locale = getLocales()?.[0]?.languageCode ?? 'en';
 
 // --- Async Storage Keys ---
 const LANGUAGE_KEY = 'user_language';
@@ -716,7 +728,7 @@ const LANGUAGE_KEY = 'user_language';
 // --- Functions ---
 export const saveLanguage = async (lang: string) => {
     try {
-        await AsyncStorage.setItem(LANGUAGE_KEY, lang);
+        await storage.setItem(LANGUAGE_KEY, lang);
         i18n.locale = lang;
     } catch (e) {
         console.error('Failed to save language', e);
@@ -725,7 +737,7 @@ export const saveLanguage = async (lang: string) => {
 
 export const loadLanguage = async () => {
     try {
-        const storedLang = await AsyncStorage.getItem(LANGUAGE_KEY);
+        const storedLang = await storage.getItem(LANGUAGE_KEY);
         if (storedLang) {
             i18n.locale = storedLang;
             return storedLang;
@@ -734,7 +746,7 @@ export const loadLanguage = async () => {
         console.error('Failed to load language', e);
     }
     // Fallback to device locale
-    const deviceLang = getLocales()[0].languageCode ?? 'en';
+    const deviceLang = getLocales()?.[0]?.languageCode ?? 'en';
     i18n.locale = deviceLang;
     return deviceLang;
 };

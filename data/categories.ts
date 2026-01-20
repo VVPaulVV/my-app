@@ -8,21 +8,21 @@ export const CATEGORIES: Category[] = [
     {
         id: 'sights',
         nameKey: 'sights',
-        color: '#FF9EAA' // Pastel Red/Pink
+        color: '#FFB3B3' // Pastel Red
     },
     {
         id: 'restaurants',
         nameKey: 'restaurants',
-        color: '#FFCB85' // Pastel Orange
+        color: '#FFE082' // Pastel Yellow
     },
     {
         id: 'museums',
         nameKey: 'museums',
-        color: '#C69CDD' // Pastel Purple
+        color: '#E1BEE7' // Pastel Purple
     },
     {
         id: 'activities',
         nameKey: 'activities',
-        color: '#92C9F9' // Pastel Blue
+        color: '#B3E5FC' // Pastel Blue
     }
 ];

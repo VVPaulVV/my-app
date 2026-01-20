@@ -37,6 +37,12 @@ const MAPPING = {
   'lightbulb.fill': 'lightbulb',
   'airplane': 'flight',
   'person.3.fill': 'groups',
+  'heart': 'favorite-border',
+  'heart.fill': 'favorite',
+  'building.2': 'business',
+  'sparkles': 'auto-awesome',
+  'mappin.and.ellipse': 'place',
+  'suit.heart.fill': 'favorite',
 } as IconMapping;
 
 /**

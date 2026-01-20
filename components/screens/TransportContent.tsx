@@ -31,9 +31,9 @@ const ParkingMapMarker = ({ item, isFocused, onSelect, theme }: { item: ParkingD
     const percentFree = item.total > 0 ? (item.libre / item.total) : 0;
 
     let color = theme.success;
-    if (!isOpen || item.libre === 0) color = theme.error;
-    else if (percentFree < 0.1) color = theme.error;
-    else if (percentFree < 0.3) color = '#FFA500';
+    if (!isOpen) color = theme.textSecondary; // Closed -> Gray
+    else if (item.libre === 0 || percentFree < 0.1) color = theme.error; // Full/Almost full -> Red
+    else if (percentFree < 0.3) color = '#FFA500'; // Moderate -> Orange
 
     useEffect(() => {
         RNAnimated.spring(scaleAnim, {
@@ -71,7 +71,7 @@ export interface TransportRef {
     openMap: () => void;
 }
 
-export const TransportContent = React.memo(React.forwardRef<TransportRef>((_, ref) => {
+export const TransportContent = React.memo(React.forwardRef<TransportRef>((props, ref) => {
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'light'];
 
@@ -265,7 +265,7 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((_, re
 
                     <View style={styles.mapOverlay}>
                         <IconSymbol name="map" size={16} color="#000" style={{ marginRight: 6 }} />
-                        <Text style={styles.mapOverlayText}>Tap to Expand</Text>
+                        <Text style={styles.mapOverlayText}>{i18n.t('tapToExpand')}</Text>
                     </View>
                 </TouchableOpacity>
 
@@ -393,8 +393,8 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((_, re
                                         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
                                             <Text style={[styles.mapCardDesc, { color: theme.textSecondary, flex: 1 }]}>
                                                 {selectedParking.etat_descriptif === 'Ouvert'
-                                                    ? `${selectedParking.libre} free spots / ${selectedParking.total}`
-                                                    : 'Closed'}
+                                                    ? `${selectedParking.libre} ${i18n.t('spots')} ${i18n.t('available')} / ${selectedParking.total}`
+                                                    : i18n.t('closed')}
                                             </Text>
                                         </View>
 

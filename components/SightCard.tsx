@@ -2,7 +2,10 @@ import { Colors } from '@/constants/theme';
 import { CATEGORIES } from '@/data/categories';
 import { Sight } from '@/data/sights';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useFavorites } from '@/hooks/use-favorites';
 import i18n, { tData } from '@/i18n';
+import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import React, { useRef } from 'react';
 import { Animated, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -31,6 +34,15 @@ export const SightCard = React.memo(({ sight, onPress, style }: SightCardProps) 
         }).start();
     };
 
+    const { isFavorite, toggleFavorite } = useFavorites();
+    const isFav = isFavorite(sight.id);
+
+    const handleToggleFavorite = (e: any) => {
+        e.stopPropagation();
+        toggleFavorite(sight.id);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    };
+
     // Find category color
     const categoryColor = CATEGORIES.find(c => c.nameKey === sight.category)?.color || theme.tint;
 
@@ -54,6 +66,12 @@ export const SightCard = React.memo(({ sight, onPress, style }: SightCardProps) 
                     <View style={[styles.categoryBadge, { backgroundColor: categoryColor }]}>
                         <Text style={styles.categoryText}>{i18n.t(sight.category).toUpperCase()}</Text>
                     </View>
+                    <Pressable
+                        onPress={handleToggleFavorite}
+                        style={styles.favoriteBadge}
+                    >
+                        <Ionicons name={isFav ? "heart" : "heart-outline"} size={18} color={isFav ? "#FF4B4B" : "#FFF"} />
+                    </Pressable>
                 </View>
 
                 <View style={styles.content}>
@@ -117,4 +135,12 @@ const styles = StyleSheet.create({
         textAlign: 'center', // Center title like a card label
         fontFamily: 'System',
     },
+    favoriteBadge: {
+        position: 'absolute',
+        bottom: 12,
+        right: 12,
+        backgroundColor: 'rgba(0,0,0,0.3)',
+        padding: 6,
+        borderRadius: 20,
+    }
 });

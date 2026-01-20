@@ -21,6 +21,8 @@ import { SIGHTS, Sight } from '@/data/sights';
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useFavorites } from '@/hooks/use-favorites';
+import * as Haptics from 'expo-haptics';
 
 const ALSACE_CENTER = [7.70, 48.56]; // Approximate center of Alsace
 
@@ -43,6 +45,23 @@ export default function SightDetailScreen() {
         MUSEUMS.map(m => ({ ...m, category: 'museums' as const })).find(m => m.id === id) ||
         RESTAURANTS.map(r => ({ ...r, category: 'restaurants' as const })).find(r => r.id === id) ||
         ACTIVITIES.map(a => ({ ...a, category: 'activities' as const })).find(a => a.id === id)) as Sight | undefined;
+
+    const { isFavorite, toggleFavorite } = useFavorites();
+    const [isFav, setIsFav] = useState(false);
+
+    useEffect(() => {
+        if (sight) {
+            setIsFav(isFavorite(sight.id));
+        }
+    }, [sight, isFavorite]);
+
+    const handleToggleFavorite = () => {
+        if (sight) {
+            toggleFavorite(sight.id);
+            setIsFav(!isFav);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+    };
 
     // Animation State
     const opacity = useSharedValue(0);
@@ -90,9 +109,7 @@ export default function SightDetailScreen() {
             <View style={styles.imageContainer}>
                 <Image source={sight.image} style={styles.image} contentFit="cover" transition={1000} />
                 <LinearGradient colors={['transparent', 'rgba(0,0,0,0.8)']} style={styles.gradient} />
-                <TouchableOpacity onPress={() => router.back()} style={[styles.backButton, { backgroundColor: theme.background }]}>
-                    <Ionicons name="arrow-back" size={24} color={theme.text} />
-                </TouchableOpacity>
+
             </View>
 
             <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
@@ -255,6 +272,14 @@ export default function SightDetailScreen() {
                 </Animated.View >
             </ScrollView >
 
+            <TouchableOpacity onPress={() => router.back()} style={[styles.backButton, { backgroundColor: theme.background }]}>
+                <Ionicons name="arrow-back" size={24} color={theme.text} />
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={handleToggleFavorite} style={[styles.favoriteButton, { backgroundColor: theme.background }]}>
+                <Ionicons name={isFav ? "heart" : "heart-outline"} size={24} color={isFav ? "#FF4B4B" : theme.text} />
+            </TouchableOpacity>
+
             <Modal
                 visible={isMapExpanded}
                 animationType="fade"
@@ -312,7 +337,8 @@ const styles = StyleSheet.create({
     imageContainer: { position: 'absolute', top: 0, left: 0, right: 0, height: 400, width: '100%', zIndex: 0 },
     image: { width: '100%', height: '100%' },
     gradient: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 200 },
-    backButton: { position: 'absolute', left: 20, width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', zIndex: 10 },
+    backButton: { position: 'absolute', top: 55, left: 20, width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', zIndex: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 4 },
+    favoriteButton: { position: 'absolute', top: 55, right: 20, width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', zIndex: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 4 },
     scrollContainer: { flex: 1, zIndex: 1 },
     contentContainer: { paddingBottom: 0 },
     detailsCard: {

@@ -19,7 +19,7 @@ export type Sight = {
             shortDescription: string;
             description?: string;
             location?: string;
-        }
+        } | undefined;
     };
 };
 

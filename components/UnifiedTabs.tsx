@@ -4,8 +4,8 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import i18n from '@/i18n';
 import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Dimensions, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import { Dimensions, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Gesture, GestureDetector, GestureHandlerRootView, TouchableOpacity } from 'react-native-gesture-handler';
 import Animated, {
     runOnJS,
     useAnimatedStyle,
@@ -39,6 +39,7 @@ export function UnifiedTabs() {
     const [category, setCategory] = useState<string>('sights');
     const [transportLoaded, setTransportLoaded] = useState(false);
     const [pendingMapOpen, setPendingMapOpen] = useState(false);
+    const [locale, setLocale] = useState(i18n.locale);
 
     // Ref for stable callbacks
     const activeIndexRef = React.useRef(0);
@@ -49,21 +50,25 @@ export function UnifiedTabs() {
     const contextX = useSharedValue(0);
 
     // Stable navigation callbacks
-    const switchTab = React.useCallback((index: number) => {
+    const updateActiveTab = React.useCallback((index: number) => {
         if (index !== activeIndexRef.current) {
-            translateX.value = withSpring(-index * SCREEN_WIDTH, {
-                damping: 25,
-                stiffness: 150,
-                mass: 0.8
-            });
             setActiveIndex(index);
             activeIndexRef.current = index;
-
             if (index === 2) {
                 setTransportLoaded(true);
             }
         }
-    }, [translateX]);
+    }, []);
+
+    const switchTab = React.useCallback((index: number) => {
+        // Always animate to ensure snap-back if we were overscrolling
+        translateX.value = withSpring(-index * SCREEN_WIDTH, {
+            damping: 25,
+            stiffness: 150,
+            mass: 0.8
+        });
+        updateActiveTab(index);
+    }, [translateX, updateActiveTab]);
 
     const navigateTo = React.useCallback((path: string, cat?: string) => {
         const index = path === '/' ? 0 : path === '/explore' ? 1 : path === '/transport' ? 2 : 0;
@@ -91,6 +96,10 @@ export function UnifiedTabs() {
             setCategory(cat);
         }
     }, [translateX]);
+
+    const handleLanguageChange = (newLocale: string) => {
+        setLocale(newLocale);
+    };
 
     // Handle map opening loop
     useEffect(() => {
@@ -129,35 +138,47 @@ export function UnifiedTabs() {
             contextX.value = translateX.value;
         })
         .onUpdate((event) => {
-            translateX.value = contextX.value + event.translationX;
+            const newTranslate = contextX.value + event.translationX;
+
+            // Limit over-swiping on the edges
+            if (newTranslate > 0) {
+                // Resistance when pulling further than the first tab (TranslateX > 0)
+                translateX.value = Math.pow(newTranslate, 0.7);
+            } else if (newTranslate < -(TAB_COUNT - 1) * SCREEN_WIDTH) {
+                // Resistance when pulling further than the last tab
+                const overscroll = newTranslate + (TAB_COUNT - 1) * SCREEN_WIDTH;
+                translateX.value = -(TAB_COUNT - 1) * SCREEN_WIDTH - Math.pow(Math.abs(overscroll), 0.7);
+            } else {
+                translateX.value = newTranslate;
+            }
         })
         .onEnd((event) => {
             const velocity = event.velocityX;
             const translation = event.translationX;
 
-            // Determine the starting index based on the context (snap point where gesture started)
-            const startIndex = -Math.round(contextX.value / SCREEN_WIDTH);
+            const currentIndex = -Math.round(contextX.value / SCREEN_WIDTH);
+            let targetIndex = currentIndex;
 
-            let targetIndex = startIndex;
-
-            // Logic:
-            // 1. If dragged more than 30% of screen width, go to next/prev
-            // 2. OR if flicked fast enough (> 500) and in the right direction
-
-            // Analyze movement
             const isSwipeLeft = translation < -SCREEN_WIDTH * 0.25 || velocity < -500;
             const isSwipeRight = translation > SCREEN_WIDTH * 0.25 || velocity > 500;
 
             if (isSwipeLeft) {
-                targetIndex = startIndex + 1;
+                targetIndex = currentIndex + 1;
             } else if (isSwipeRight) {
-                targetIndex = startIndex - 1;
+                targetIndex = currentIndex - 1;
             }
 
-            // STRICT CLAMPING: Ensure we only move one tab at a time relative to valid bounds
             const clampedIndex = Math.max(0, Math.min(TAB_COUNT - 1, targetIndex));
 
-            runOnJS(switchTab)(clampedIndex);
+            // Always animate to the correct tab position
+            translateX.value = withSpring(-clampedIndex * SCREEN_WIDTH, {
+                damping: 25,
+                stiffness: 150,
+                mass: 0.8,
+                velocity: velocity
+            });
+
+            runOnJS(updateActiveTab)(clampedIndex);
         });
 
     const animatedStyle = useAnimatedStyle(() => ({
@@ -207,64 +228,67 @@ export function UnifiedTabs() {
                         style={[styles.slider, animatedStyle]}
                     >
                         <View style={{ width: SCREEN_WIDTH }}>
-                            <MemoizedHome onNavigate={navigateTo} />
+                            <MemoizedHome key={`home-${locale}`} onNavigate={navigateTo} onLanguageChange={handleLanguageChange} />
                         </View>
                         <View style={{ width: SCREEN_WIDTH }}>
                             {/* Explore is the middle tab, keep it mounted for smooth swiping */}
-                            <MemoizedExplore category={category} setCategory={setCategory} />
+                            <MemoizedExplore key={`explore-${locale}`} category={category} setCategory={setCategory} />
                         </View>
                         <View style={{ width: SCREEN_WIDTH }}>
                             {/* Only lazy load Transport (Map) as it's the heaviest component, then keep alive */}
-                            {activeIndex === 2 || transportLoaded ? <MemoizedTransport ref={transportRef} /> : <View style={{ flex: 1 }} />}
+                            {activeIndex === 2 || transportLoaded ? <MemoizedTransport key={`transport-${locale}`} ref={transportRef} /> : <View style={{ flex: 1 }} />}
                         </View>
                     </Animated.View>
                 </GestureDetector>
+
+                {/* Animated Categories Overlay (Behind Tab Bar) */}
+                <Animated.View
+                    pointerEvents={activeIndex === 1 ? 'auto' : 'none'}
+                    style={[
+                        styles.categoriesOverlay,
+                        { backgroundColor: theme.cardBackground },
+                        categoriesAnimatedStyle
+                    ]}
+                >
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesScroll}>
+                        {CATEGORIES.map(cat => (
+                            <TouchableOpacity
+                                key={cat.id}
+                                style={styles.categoryPill}
+                                onPress={() => setCategory(category === cat.nameKey ? '' : cat.nameKey)}
+                            >
+                                <Text style={[
+                                    styles.categoryPillText,
+                                    { color: category === cat.nameKey ? cat.color : theme.text }
+                                ]}>{i18n.t(cat.nameKey)}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                </Animated.View>
+
+                {/* Custom Bottom Tab Bar */}
+                <View style={[styles.tabBar, {
+                    backgroundColor: theme.cardBackground,
+                    borderTopColor: theme.border,
+                    zIndex: 10,
+                    ...Platform.select({
+                        ios: {
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: -2 },
+                            shadowOpacity: 0.1,
+                            shadowRadius: 4,
+                        },
+                        android: {
+                            elevation: 12, // Increased elevation
+                        }
+                    })
+                }]}>
+                    {renderTabItem(0, 'house.fill', i18n.t('home'))}
+                    {renderTabItem(1, 'paperplane.fill', i18n.t('explore'))}
+                    {renderTabItem(2, 'tram.fill', i18n.t('transport'))}
+                </View>
             </GestureHandlerRootView>
-
-            {/* Animated Categories Overlay (Behind Tab Bar) */}
-            <Animated.View style={[
-                styles.categoriesOverlay,
-                { backgroundColor: theme.cardBackground },
-                categoriesAnimatedStyle
-            ]}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesScroll}>
-                    {CATEGORIES.map(cat => (
-                        <TouchableOpacity
-                            key={cat.id}
-                            style={styles.categoryPill}
-                            onPress={() => setCategory(category === cat.nameKey ? '' : cat.nameKey)}
-                        >
-                            <Text style={[
-                                styles.categoryPillText,
-                                { color: category === cat.nameKey ? cat.color : theme.text }
-                            ]}>{i18n.t(cat.nameKey)}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
-            </Animated.View>
-
-            {/* Custom Bottom Tab Bar */}
-            <View style={[styles.tabBar, {
-                backgroundColor: theme.cardBackground,
-                borderTopColor: theme.border,
-                zIndex: 10, // Ensure it's above the categories
-                ...Platform.select({
-                    ios: {
-                        shadowColor: '#000',
-                        shadowOffset: { width: 0, height: -2 },
-                        shadowOpacity: 0.1,
-                        shadowRadius: 4,
-                    },
-                    android: {
-                        elevation: 8,
-                    }
-                })
-            }]}>
-                {renderTabItem(0, 'house.fill', i18n.t('home'))}
-                {renderTabItem(1, 'paperplane.fill', i18n.t('explore'))}
-                {renderTabItem(2, 'tram.fill', i18n.t('transport'))}
-            </View>
-        </View >
+        </View>
     );
 }
 
