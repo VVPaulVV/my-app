@@ -1,7 +1,8 @@
 import { ParkingList } from '@/components/ParkingList';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
-import { TRANSPORT_LINES } from '@/data/transport_data';
+import { TRANSPORT_LINES } from '@/data/transport_data_generated';
+import { TRANSPORT_STOPS } from '@/data/transport_stops'; // Updated import
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { ParkingData, useParkingData } from '@/hooks/useParkingData';
 import i18n from '@/i18n';
@@ -84,6 +85,7 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
 
     const [selectedLineId, setSelectedLineId] = useState<string | null>(null);
     const [selectedParking, setSelectedParking] = useState<ParkingData | null>(null);
+    const [selectedStop, setSelectedStop] = useState<any | null>(null); // New State for Stop
 
     const [isGuideVisible, setIsGuideVisible] = useState(false);
     const modalOpacity = useSharedValue(0);
@@ -104,12 +106,11 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
         modalOpacity.value = withTiming(0, { duration: 300 }, () => {
             runOnJS(setIsMapFullscreen)(false);
             runOnJS(setSelectedLineId)(null);
+            runOnJS(setSelectedStop)(null);
         });
     };
 
     // --- Parking Map Handlers ---
-    // We reuse simple Modal for parking map (inspired by ExploreContent) rather than the complex animated one for Transport
-
     React.useImperativeHandle(ref, () => ({
         openMap: handleOpenMap
     }));
@@ -118,7 +119,6 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
         opacity: modalOpacity.value
     }));
 
-    // Accelerate UI fade out ONLY when closing + Manual Slide Up/Down
     const uiStyle = useAnimatedStyle(() => {
         const translateY = (1 - modalOpacity.value) * 50;
         if (!isClosing.value) {
@@ -143,24 +143,53 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
 
     // Prepare GeoJSON Data
     const transportSource = useMemo(() => {
-        const features = TRANSPORT_LINES.map(line => ({
-            type: 'Feature' as const,
-            properties: { id: line.id, color: line.color },
-            geometry: line.geoJson || toGeoJSONLineString(offsetPolyline(line.path || [], 0)),
-        }));
+        const features = TRANSPORT_LINES.map(line => {
+            if (line.geoJson && line.geoJson.type === 'Feature') {
+                return {
+                    type: 'Feature' as const,
+                    properties: { id: line.id, color: line.color },
+                    geometry: line.geoJson.geometry
+                };
+            }
+            return {
+                type: 'Feature' as const,
+                properties: { id: line.id, color: line.color },
+                geometry: line.geoJson || toGeoJSONLineString(offsetPolyline((line as any).path || [], 0)),
+            };
+        });
         return { type: 'FeatureCollection' as const, features: features };
     }, []);
 
+    const stopsSource = useMemo(() => {
+        // Filter stops if line is selected?
+        if (!selectedLineId) return TRANSPORT_STOPS;
+
+        const shortName = selectedLineId.replace('TRAM_', '').replace('BUS_', '');
+        const filteredFeatures = TRANSPORT_STOPS.features.filter((f: any) =>
+            f.properties.lines.includes(shortName)
+        );
+        return { type: 'FeatureCollection', features: filteredFeatures };
+    }, [selectedLineId]);
+
     const toggleLineSelection = (id: string) => {
         setSelectedLineId(prev => (prev === id ? null : id));
+        setSelectedStop(null); // Deselect stop on line change
     };
 
     const selectedLine = TRANSPORT_LINES.find(l => l.id === selectedLineId);
+
+    const onStopPress = (e: any) => {
+        const feature = e.features[0];
+        if (feature) {
+            setSelectedStop(feature.properties);
+        }
+    };
 
     const renderMapContent = (fullscreen: boolean) => (
         <Mapbox.MapView
             style={{ flex: 1 }}
             styleURL={Mapbox.StyleURL.Street}
+            // styleURL="mapbox://styles/mapbox/light-v11" // Cleaner style for transport?
             surfaceView={false}
             scrollEnabled={fullscreen}
             zoomEnabled={fullscreen}
@@ -168,23 +197,103 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
             rotateEnabled={fullscreen}
             attributionEnabled={false}
             logoEnabled={false}
+            onPress={() => setSelectedStop(null)}
         >
             <Mapbox.Camera
                 zoomLevel={INITIAL_ZOOM}
                 centerCoordinate={CITY_CENTER}
                 animationMode={'none'}
             />
+
+            {/* Lines Layer */}
             <Mapbox.ShapeSource id="transportLines" shape={transportSource}>
+                {/* Normal/Background Lines */}
                 <Mapbox.LineLayer
                     id="lines"
                     style={{
                         lineColor: ['get', 'color'],
-                        lineWidth: 4,
+                        lineWidth: [
+                            'interpolate', ['linear'], ['zoom'],
+                            10, 2,
+                            15, 6
+                        ],
                         lineCap: 'round',
                         lineJoin: 'round',
-                        lineOpacity: selectedLineId
-                            ? ['match', ['get', 'id'], selectedLineId, 1, 0.0]
-                            : 0.9
+                        lineOpacity: selectedLineId ? 0 : 0.8
+                    }}
+                />
+                {/* Selected Line Highlight */}
+                <Mapbox.LineLayer
+                    id="lines-selected"
+                    filter={['==', ['get', 'id'], selectedLineId || '']}
+                    style={{
+                        lineColor: ['get', 'color'],
+                        lineWidth: [
+                            'interpolate', ['linear'], ['zoom'],
+                            10, 5,
+                            15, 10
+                        ],
+                        lineCap: 'round',
+                        lineJoin: 'round',
+                        lineOpacity: 1
+                    }}
+                />
+            </Mapbox.ShapeSource>
+
+            {/* Stops Layer - Only visible when zoomed in a bit or if line selected? */}
+            {/* Or always visible but small? */}
+            <Mapbox.ShapeSource id="transportStops" shape={stopsSource as any} onPress={onStopPress} hitbox={{ width: 20, height: 20 }}>
+                {/* Normal Stops Layer */}
+                <Mapbox.CircleLayer
+                    id="stops"
+                    aboveLayerID="lines-selected"
+                    minZoomLevel={12}
+                    filter={['!=', ['get', 'uniqueId'], selectedStop?.uniqueId || '']}
+                    style={{
+                        circleRadius: [
+                            'interpolate', ['linear'], ['zoom'],
+                            12, 3,
+                            16, 6
+                        ],
+                        circleColor: '#FFFFFF',
+                        circleStrokeColor: '#333333',
+                        circleStrokeWidth: 1.5,
+                    }}
+                />
+                {/* Selected Stop Highlight Layer */}
+                <Mapbox.CircleLayer
+                    id="stops-selected"
+                    aboveLayerID="stops"
+                    minZoomLevel={12}
+                    filter={['==', ['get', 'uniqueId'], selectedStop?.uniqueId || '']}
+                    style={{
+                        circleRadius: [
+                            'interpolate', ['linear'], ['zoom'],
+                            12, 8,
+                            16, 12
+                        ],
+                        circleColor: '#FFFFFF',
+                        circleStrokeColor: '#000000',
+                        circleStrokeWidth: 3,
+                        circleOpacity: 1
+                    }}
+                />
+                {/* Text Labels for Stops at high zoom */}
+                <Mapbox.SymbolLayer
+                    id="stopLabels"
+                    aboveLayerID="stops-selected"
+                    minZoomLevel={14.5}
+                    style={{
+                        textField: ['get', 'name'],
+                        textSize: 12,
+                        textOffset: [0, 1.2],
+                        textAnchor: 'top',
+                        textColor: '#333',
+                        textHaloColor: '#FFF',
+                        textHaloWidth: 2,
+                        textOpacity: selectedLineId
+                            ? 1 // Always show if line filtering
+                            : ['step', ['zoom'], 0, 15, 1] // Show after zoom 15 normally
                     }}
                 />
             </Mapbox.ShapeSource>
@@ -307,7 +416,7 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
                                     })}
                                 </ScrollView>
                             </Animated.View>
-                            {selectedLine && (
+                            {selectedLine && !selectedStop && (
                                 <Animated.View entering={FadeInDown.duration(200)} style={[styles.detailCard, { backgroundColor: theme.cardBackground }, uiStyle]}>
                                     <View style={[styles.detailIcon, { backgroundColor: selectedLine.color }]}>
                                         <MaterialIcons name={selectedLine.type === 'tram' ? 'tram' : 'directions-bus'} size={20} color="#FFF" />
@@ -318,6 +427,32 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
                                     </View>
                                 </Animated.View>
                             )}
+
+                            {/* Selected Stop Card */}
+                            {selectedStop && (
+                                <Animated.View entering={FadeInDown.duration(200)} style={[styles.detailCard, { backgroundColor: theme.cardBackground }, uiStyle]}>
+                                    <View style={[styles.detailIcon, { backgroundColor: '#FFF', borderWidth: 2, borderColor: '#333' }]}>
+                                        <MaterialIcons name="place" size={24} color="#333" />
+                                    </View>
+                                    <View style={styles.detailTextContainer}>
+                                        <Text style={[styles.detailTitle, { color: theme.text }]}>{selectedStop.name}</Text>
+                                        <Text style={[styles.detailSubtitle, { color: theme.textSecondary }]}>{i18n.t('lines')}: </Text>
+                                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                                            {(selectedStop.lines || []).map((l: string) => {
+                                                // Find color
+                                                const lineData = TRANSPORT_LINES.find(data => data.id.endsWith(l));
+                                                const color = lineData?.color || '#333';
+                                                return (
+                                                    <View key={l} style={{ backgroundColor: color, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                                                        <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold' }}>{l}</Text>
+                                                    </View>
+                                                );
+                                            })}
+                                        </View>
+                                    </View>
+                                </Animated.View>
+                            )}
+
                             <Animated.View style={[styles.closeButtonContainer, closeButtonAnimationStyle]}>
                                 <TouchableOpacity style={[styles.closeButton, { backgroundColor: theme.cardBackground }]} onPress={handleCloseMap}>
                                     <MaterialIcons name="close" size={24} color={theme.text} />
@@ -352,6 +487,7 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
                                 />
                             ))}
                         </Mapbox.MapView>
+
 
                         <TouchableOpacity
                             style={[styles.floatingCloseBtn, { backgroundColor: theme.cardBackground, shadowColor: '#000' }]}
