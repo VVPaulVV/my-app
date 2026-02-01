@@ -4,7 +4,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { SIGHTS } from '@/data/sights';
 import { TRANSPORT_LINES } from '@/data/transport_data_generated';
-import { TRANSPORT_STOPS } from '@/data/transport_stops'; 
+import { TRANSPORT_STOPS } from '@/data/transport_stops'; // Updated import
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { ParkingData, useParkingData } from '@/hooks/useParkingData';
 import i18n from '@/i18n';
@@ -17,26 +17,26 @@ import Animated, { Easing, FadeInDown, LinearTransition, runOnJS, SlideInDown, S
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GuideContent } from './GuideContent';
 
-
+// --- Constants ---
 const MAPBOX_TOKEN = 'pk.eyJ1Ijoic3BlY3RydWgiLCJhIjoiY21rNG5sNmh3MDF6NjNkczl5cGM3Ynl2aSJ9.U3vf9ao95WB7Xxx4n2Ihug';
 Mapbox.setAccessToken(MAPBOX_TOKEN);
 
-const CITY_CENTER = [7.74894, 48.58177]; 
+const CITY_CENTER = [7.74894, 48.58177]; // [Lon, Lat] for Mapbox
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const INITIAL_ZOOM = 11.5;
 
-
+// --- Parking Marker Component ---
 const ParkingMapMarker = ({ item, isFocused, onSelect, theme }: { item: ParkingData, isFocused: boolean, onSelect: () => void, theme: any }) => {
     const scaleAnim = useRef(new RNAnimated.Value(1)).current;
 
-    
+    // Determine color based on status
     const isOpen = item.etat_descriptif === 'Ouvert';
     const percentFree = item.total > 0 ? (item.libre / item.total) : 0;
 
     let color = theme.success;
-    if (!isOpen) color = theme.textSecondary; 
-    else if (item.libre === 0 || percentFree < 0.1) color = theme.error; 
-    else if (percentFree < 0.3) color = '#FFA500'; 
+    if (!isOpen) color = theme.textSecondary; // Closed -> Gray
+    else if (item.libre === 0 || percentFree < 0.1) color = theme.error; // Full/Almost full -> Red
+    else if (percentFree < 0.3) color = '#FFA500'; // Moderate -> Orange
 
     useEffect(() => {
         RNAnimated.spring(scaleAnim, {
@@ -70,7 +70,7 @@ const ParkingMapMarker = ({ item, isFocused, onSelect, theme }: { item: ParkingD
     );
 };
 
-
+// --- Layers Menu Component ---
 const LayersMenu = ({ visible, onClose, layers, toggleLayer, theme }: any) => {
     if (!visible) return null;
 
@@ -124,23 +124,23 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'light'];
 
-    
+    // Parking Data
     const { data: parkingData, loading: parkingLoading, error: parkingError, refetch: refetchParking, lastUpdated } = useParkingData();
 
-    
+    // Animation State
     const [isMapFullscreen, setIsMapFullscreen] = useState(false);
     const [isParkingMapVisible, setIsParkingMapVisible] = useState(false);
 
     const [selectedLineId, setSelectedLineId] = useState<string | null>(null);
     const [selectedParking, setSelectedParking] = useState<ParkingData | null>(null);
-    const [selectedStop, setSelectedStop] = useState<any | null>(null); 
+    const [selectedStop, setSelectedStop] = useState<any | null>(null); // New State for Stop
     const [arrivals, setArrivals] = useState<VehicleJourney[]>([]);
     const [arrivalsLoading, setArrivalsLoading] = useState(false);
     const [fetchError, setFetchError] = useState<string | null>(null);
     const [stopRefs, setStopRefs] = useState<Record<string, string>>({});
     const [followingUser, setFollowingUser] = useState(false);
 
-    
+    // Layers State
     const [isLayersValues, setIsLayersValues] = useState({
         landmarks: true,
         mainLines: true,
@@ -155,7 +155,7 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
     const modalOpacity = useSharedValue(0);
     const isClosing = useSharedValue(false);
 
-    
+    // --- Transport Map Handlers ---
     const handleOpenMap = () => {
         setIsMapFullscreen(true);
         isClosing.value = false;
@@ -177,11 +177,11 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
 
     const handleLocateMe = async (type: 'transport' | 'parking') => {
         setFollowingUser(true);
-        
-        
+        // Reset after bit? Or just let it follow until moved?
+        // Mapbox handles the "stop following on gesture" usually.
     };
 
-    
+    // --- Real-time Arrivals ---
     const fetchArrivals = useCallback(async (stopName: string) => {
         setArrivalsLoading(true);
         setFetchError(null);
@@ -190,7 +190,7 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
         try {
             let ref = stopRefs[stopName];
 
-            
+            // If we don't have the ref, we need to find it
             if (!ref) {
                 console.log(`[Transport] Looking up ref for: ${stopName}`);
                 const discovery = await ctsService.getStopPointsDiscovery();
@@ -201,15 +201,15 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
                 const normalize = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, '');
                 const target = normalize(stopName);
 
-                
+                // Strategy 1: Exact Match
                 let matched = discovery.find(s => s.StopPointName === stopName);
 
-                
+                // Strategy 2: Normalized Match
                 if (!matched) {
                     matched = discovery.find(s => normalize(s.StopPointName) === target);
                 }
 
-                
+                // Strategy 3: Partial Match (e.g. "Gare Centrale" vs "Gare Centrale (Platform A)")
                 if (!matched) {
                     matched = discovery.find(s => {
                         const sNorm = normalize(s.StopPointName);
@@ -251,7 +251,7 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
         }
     }, [selectedStop]);
 
-    
+    // --- Parking Map Handlers ---
     React.useImperativeHandle(ref, () => ({
         openMap: handleOpenMap
     }));
@@ -282,10 +282,10 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
         Linking.openURL('https://www.cts-strasbourg.eu/en/');
     };
 
-    
-    
+    // Prepare GeoJSON Data
+    // Prepare GeoJSON Data
     const transportSource = useMemo(() => {
-        
+        // Filter lines based on layers
         const filteredLines = TRANSPORT_LINES.filter(line => {
             const isMain = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].some(id => line.id.endsWith(id));
             if (isMain) return isLayersValues.mainLines;
@@ -332,12 +332,12 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
     }, [isLayersValues.landmarks]);
 
     const stopsSource = useMemo(() => {
-        
-        
-        
+        // Only show stops if zoomed in OR line is selected
+        // And respect layers (if main lines off, hide main line stops?)
+        // For simplicity, just filter by selected line or show all if nothing selected (but optimized by zoom)
 
         if (!selectedLineId) {
-            
+            // If main lines are OFF, maybe hide all stops? Let's keep it simple.
             if (!isLayersValues.mainLines && !isLayersValues.buses) return { type: 'FeatureCollection', features: [] };
             return TRANSPORT_STOPS;
         }
@@ -351,7 +351,7 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
 
     const toggleLineSelection = (id: string) => {
         setSelectedLineId(prev => (prev === id ? null : id));
-        setSelectedStop(null); 
+        setSelectedStop(null); // Deselect stop on line change
     };
 
     const selectedLine = TRANSPORT_LINES.find(l => l.id === selectedLineId);
@@ -367,7 +367,7 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
         <Mapbox.MapView
             style={{ flex: 1 }}
             styleURL={Mapbox.StyleURL.Street}
-            
+            // styleURL="mapbox://styles/mapbox/light-v11" // Cleaner style for transport?
             surfaceView={false}
             scrollEnabled={fullscreen}
             zoomEnabled={fullscreen}
@@ -395,12 +395,12 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
                 }}
             />
 
-            {}
+            {/* Landmarks Layer */}
             <Mapbox.ShapeSource id="landmarks" shape={landmarksSource as any} onPress={() => { }}>
                 <Mapbox.SymbolLayer
                     id="landmarkIcons"
                     style={{
-                        iconImage: 'marker-15', 
+                        iconImage: 'marker-15', // Use built-in or custom icon
                         iconSize: 1.5,
                         textField: ['get', 'name'],
                         textSize: 12,
@@ -412,14 +412,14 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
                 />
             </Mapbox.ShapeSource>
 
-            {}
+            {/* Lines Layer */}
             <Mapbox.ShapeSource id="transportLines" shape={transportSource} onPress={(e) => {
                 if (e.features && e.features.length > 0) {
                     const id = e.features[0].properties?.id;
                     if (id) toggleLineSelection(id);
                 }
             }}>
-                {}
+                {/* Normal/Background Lines */}
                 <Mapbox.LineLayer
                     id="lines"
                     style={{
@@ -434,7 +434,7 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
                         lineOpacity: selectedLineId ? 0 : 0.8
                     }}
                 />
-                {}
+                {/* Selected Line Highlight */}
                 <Mapbox.LineLayer
                     id="lines-selected"
                     filter={['==', ['get', 'id'], selectedLineId || '']}
@@ -452,10 +452,10 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
                 />
             </Mapbox.ShapeSource>
 
-            {}
-            {}
+            {/* Stops Layer - Only visible when zoomed in a bit or if line selected? */}
+            {/* Or always visible but small? */}
             <Mapbox.ShapeSource id="transportStops" shape={stopsSource as any} onPress={onStopPress} hitbox={{ width: 20, height: 20 }}>
-                {}
+                {/* Normal Stops Layer */}
                 <Mapbox.CircleLayer
                     id="stops"
                     aboveLayerID="lines-selected"
@@ -472,7 +472,7 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
                         circleStrokeWidth: 1.5,
                     }}
                 />
-                {}
+                {/* Selected Stop Highlight Layer */}
                 <Mapbox.CircleLayer
                     id="stops-selected"
                     aboveLayerID="stops"
@@ -490,7 +490,7 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
                         circleOpacity: 1
                     }}
                 />
-                {}
+                {/* Text Labels for Stops at high zoom */}
                 <Mapbox.SymbolLayer
                     id="stopLabels"
                     aboveLayerID="stops-selected"
@@ -504,8 +504,8 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
                         textHaloColor: '#FFF',
                         textHaloWidth: 2,
                         textOpacity: selectedLineId
-                            ? 1 
-                            : ['step', ['zoom'], 0, 15, 1] 
+                            ? 1 // Always show if line filtering
+                            : ['step', ['zoom'], 0, 15, 1] // Show after zoom 15 normally
                     }}
                 />
             </Mapbox.ShapeSource>
@@ -527,7 +527,7 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
                     <Text style={[styles.title, { color: theme.text }]}>{i18n.t('transport')}</Text>
                 </View>
 
-                {}
+                {/* Intro Card */}
                 <View style={[styles.card, { backgroundColor: theme.cardBackground, borderColor: theme.border }]}>
                     <Text style={[styles.cardTitle, { color: theme.text }]}>{i18n.t('gettingAround')}</Text>
                     <Text style={[styles.text, { color: theme.text }]}>
@@ -559,7 +559,7 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
                     </TouchableOpacity>
                 </View>
 
-                {}
+                {/* Guide Modal */}
                 <Modal
                     visible={isGuideVisible}
                     animationType="slide"
@@ -574,7 +574,7 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
                     </View>
                 </Modal>
 
-                {}
+                {/* Map Preview */}
                 <TouchableOpacity
                     style={styles.mapContainer}
                     activeOpacity={0.9}
@@ -590,7 +590,7 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
                     </View>
                 </TouchableOpacity>
 
-                {}
+                {/* Live Parking Section */}
                 <View style={{ paddingHorizontal: 20, paddingTop: 10 }}>
                     <ParkingList
                         data={parkingData}
@@ -606,13 +606,13 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
                     />
                 </View>
 
-                {}
+                {/* -------------------- FULLSCREEN TRANSPORT MAP -------------------- */}
                 <Modal visible={isMapFullscreen} onRequestClose={handleCloseMap} animationType="none" transparent={true}>
                     <Animated.View style={[{ flex: 1, backgroundColor: theme.background }, animatedModalStyle]}>
                         <SafeAreaView style={{ flex: 1 }}>
                             <View style={{ flex: 1 }}>{renderMapContent(true)}</View>
 
-                            {}
+                            {/* Layers FAB */}
                             <TouchableOpacity
                                 style={[styles.layersFab, { backgroundColor: theme.cardBackground }]}
                                 onPress={() => setIsLayersVisible(true)}
@@ -628,7 +628,7 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
                                 theme={theme}
                             />
 
-                            {}
+                            {/* Line Detail Card (Tap-to-Clarify) */}
                             {selectedLine && !selectedStop && (
                                 <Animated.View entering={FadeInDown.duration(200)} style={[styles.detailCard, { backgroundColor: theme.cardBackground }, uiStyle]}>
                                     <View style={[styles.lineBadgeBig, { backgroundColor: selectedLine.color }]}>
@@ -644,7 +644,7 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
                                 </Animated.View>
                             )}
 
-                            {}
+                            {/* Selected Stop Card */}
                             {selectedStop && (
                                 <Animated.View entering={FadeInDown.duration(200)} style={[styles.detailCard, { backgroundColor: theme.cardBackground, flexDirection: 'column', alignItems: 'stretch' }, uiStyle]}>
                                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
@@ -679,7 +679,7 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
                                         </TouchableOpacity>
                                     </View>
 
-                                    {}
+                                    {/* Arrivals List */}
                                     <View style={styles.arrivalsContainer}>
                                         <Text style={[styles.arrivalsHeader, { color: theme.textSecondary }]}>{i18n.t('realTimeArrivals')}</Text>
                                         {arrivalsLoading ? (
@@ -695,7 +695,7 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
                                                 const lineData = TRANSPORT_LINES.find(l => l.id.endsWith(arr.PublishedLineName));
                                                 const color = lineData?.color || '#333';
 
-                                                
+                                                // Calculate minutes until arrival
                                                 const arrivalTime = new Date(arr.MonitoredCall.ExpectedArrivalTime).getTime();
                                                 const now = new Date().getTime();
                                                 const diffMins = Math.max(0, Math.floor((arrivalTime - now) / 60000));
@@ -733,7 +733,7 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
                     </Animated.View>
                 </Modal>
 
-                {}
+                {/* -------------------- FULLSCREEN PARKING MAP -------------------- */}
                 <Modal visible={isParkingMapVisible} onRequestClose={handleCloseParkingMap} animationType="fade" transparent={false}>
                     <View style={{ flex: 1, backgroundColor: theme.background }}>
                         <Mapbox.MapView
@@ -781,7 +781,7 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
                             <IconSymbol name="xmark" size={20} color={theme.text} />
                         </TouchableOpacity>
 
-                        {}
+                        {/* Parking Info Card */}
                         {selectedParking && (
                             <Animated.View
                                 style={[styles.infoCardContainer]}
@@ -819,7 +819,7 @@ export const TransportContent = React.memo(React.forwardRef<TransportRef>((props
                                             </Text>
                                         </View>
 
-                                        {}
+                                        {/* Simple Progress Bar */}
                                         {selectedParking.etat_descriptif === 'Ouvert' && (
                                             <View style={[styles.progressTrack, { backgroundColor: theme.border, marginTop: 8 }]}>
                                                 <View
@@ -910,7 +910,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: 60,
         right: 20,
-        zIndex: 101, 
+        zIndex: 101, // Above everything
     },
     closeButton: {
         width: 40,
@@ -953,7 +953,7 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
     },
-    
+    // --- Layers Menu Styles ---
     layersFab: {
         position: 'absolute',
         bottom: 30,
@@ -1108,10 +1108,10 @@ const styles = StyleSheet.create({
         height: '80%',
         width: '100%',
     },
-    
+    // --- Parking Map Styles ---
     floatingCloseBtn: {
         position: 'absolute',
-        top: 50, 
+        top: 50, // SafeArea
         left: 20,
         width: 44,
         height: 44,
