@@ -1,6 +1,5 @@
-import { UnifiedTabs } from '@/components/UnifiedTabs';
-import React from 'react';
+import { Slot } from 'expo-router';
 
 export default function TabLayout() {
-  return <UnifiedTabs />;
+    return <Slot />;
 }

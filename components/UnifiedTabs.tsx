@@ -16,17 +16,19 @@ import Animated, {
 import { ExploreContent } from './screens/ExploreContent';
 import { HomeContent } from './screens/HomeContent';
 import { ItineraryContent } from './screens/ItineraryContent';
+import { MapContent } from './screens/MapContent';
 import { TransportContent, TransportRef } from './screens/TransportContent';
 import { IconSymbol } from './ui/icon-symbol';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const TAB_COUNT = 4;
+const TAB_COUNT = 5;
 
 
 const MemoizedHome = React.memo(HomeContent);
 const MemoizedExplore = React.memo(ExploreContent);
 const MemoizedTransport = React.memo(TransportContent);
 const MemoizedItinerary = React.memo(ItineraryContent);
+const MemoizedFullMap = React.memo(MapContent);
 
 export function UnifiedTabs() {
     const router = useRouter();
@@ -36,22 +38,22 @@ export function UnifiedTabs() {
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'light'];
 
-    
-    const [activeIndex, setActiveIndex] = useState(0);
+
+    const [activeIndex, setActiveIndex] = useState(1);
     const [category, setCategory] = useState<string>('sights');
     const [transportLoaded, setTransportLoaded] = useState(false);
     const [pendingMapOpen, setPendingMapOpen] = useState(false);
     const [locale, setLocale] = useState(i18n.locale);
 
-    
-    const activeIndexRef = React.useRef(0);
+
+    const activeIndexRef = React.useRef(1);
     const transportRef = React.useRef<TransportRef>(null);
 
-    
-    const translateX = useSharedValue(0);
+
+    const translateX = useSharedValue(-SCREEN_WIDTH);
     const contextX = useSharedValue(0);
 
-    
+
     const updateActiveTab = React.useCallback((index: number) => {
         if (index !== activeIndexRef.current) {
             setActiveIndex(index);
@@ -63,7 +65,7 @@ export function UnifiedTabs() {
     }, []);
 
     const switchTab = React.useCallback((index: number) => {
-        
+
         translateX.value = withSpring(-index * SCREEN_WIDTH, {
             damping: 25,
             stiffness: 150,
@@ -73,7 +75,7 @@ export function UnifiedTabs() {
     }, [translateX, updateActiveTab]);
 
     const navigateTo = React.useCallback((path: string, cat?: string) => {
-        const index = path === '/' ? 0 : path === '/explore' ? 1 : path === '/itinerary' ? 2 : path === '/transport' ? 3 : 0;
+        const index = path === '/' ? 1 : path === '/explore' ? 2 : path === '/itinerary' ? 3 : path === '/transport' ? 4 : 1;
 
         if (index !== activeIndexRef.current) {
             translateX.value = withSpring(-index * SCREEN_WIDTH, {
@@ -84,13 +86,13 @@ export function UnifiedTabs() {
             setActiveIndex(index);
             activeIndexRef.current = index;
 
-            if (index === 2) {
+            if (index === 4) {
                 setTransportLoaded(true);
                 if (cat === 'map') {
                     setPendingMapOpen(true);
                 }
             }
-        } else if (index === 2 && cat === 'map') {
+        } else if (index === 4 && cat === 'map') {
             transportRef.current?.openMap();
         }
 
@@ -103,7 +105,7 @@ export function UnifiedTabs() {
         setLocale(newLocale);
     };
 
-    
+
     useEffect(() => {
         if (pendingMapOpen && transportLoaded && activeIndex === 2) {
             setTimeout(() => {
@@ -113,20 +115,20 @@ export function UnifiedTabs() {
         }
     }, [pendingMapOpen, transportLoaded, activeIndex]);
 
-    
-    
-    
-    
+
+
+
+
     useEffect(() => {
         const index = pathname === '/' ? 0 : pathname === '/explore' ? 1 : pathname === '/transport' ? 2 : 0;
         if (index !== activeIndex && pathname !== '/') {
-            
+
         }
-        
+
         activeIndexRef.current = activeIndex;
     }, [activeIndex, pathname]);
 
-    
+
     useEffect(() => {
         if (params.category && params.category !== category) {
             setCategory(params.category);
@@ -134,20 +136,21 @@ export function UnifiedTabs() {
     }, [params.category]);
 
     const pan = Gesture.Pan()
-        .activeOffsetX([-20, 20]) 
-        .failOffsetY([-5, 5])     
+        .enabled(activeIndex !== 0)
+        .activeOffsetX([-20, 20])
+        .failOffsetY([-5, 5])
         .onStart(() => {
             contextX.value = translateX.value;
         })
         .onUpdate((event) => {
             const newTranslate = contextX.value + event.translationX;
 
-            
+
             if (newTranslate > 0) {
-                
+
                 translateX.value = Math.pow(newTranslate, 0.7);
             } else if (newTranslate < -(TAB_COUNT - 1) * SCREEN_WIDTH) {
-                
+
                 const overscroll = newTranslate + (TAB_COUNT - 1) * SCREEN_WIDTH;
                 translateX.value = -(TAB_COUNT - 1) * SCREEN_WIDTH - Math.pow(Math.abs(overscroll), 0.7);
             } else {
@@ -172,7 +175,7 @@ export function UnifiedTabs() {
 
             const clampedIndex = Math.max(0, Math.min(TAB_COUNT - 1, targetIndex));
 
-            
+
             translateX.value = withSpring(-clampedIndex * SCREEN_WIDTH, {
                 damping: 25,
                 stiffness: 150,
@@ -187,7 +190,7 @@ export function UnifiedTabs() {
         transform: [{ translateX: translateX.value }],
     }));
 
-    
+
     const renderTabItem = (index: number, iconName: any, label: string) => {
         const isActive = activeIndex === index;
         return (
@@ -212,13 +215,25 @@ export function UnifiedTabs() {
     };
 
     const categoriesAnimatedStyle = useAnimatedStyle(() => {
-        const isExplore = Math.abs(translateX.value + SCREEN_WIDTH) < SCREEN_WIDTH * 0.5;
-        
+        const isExplore = Math.abs(translateX.value + 2 * SCREEN_WIDTH) < SCREEN_WIDTH * 0.5;
+
         const translateYValue = isExplore ? -36 : 0;
 
         return {
             transform: [{ translateY: withTiming(translateYValue, { duration: 250 }) }],
             opacity: withTiming(isExplore ? 1 : 0, { duration: 200 }),
+        };
+    });
+
+    const tabBarAnimatedStyle = useAnimatedStyle(() => {
+        // activeIndex 0 is full screen map
+        // We want to hide it for the full map view only
+        const shouldHide = activeIndex === 0;
+
+        return {
+            transform: [{
+                translateY: withTiming(shouldHide ? 150 : 0, { duration: 300 })
+            }],
         };
     });
 
@@ -230,29 +245,33 @@ export function UnifiedTabs() {
                         style={[styles.slider, animatedStyle]}
                     >
                         <View style={{ width: SCREEN_WIDTH }}>
+                            <MemoizedFullMap key={`fullmap-${locale}`} theme={theme} onClose={() => navigateTo('/')} router={router} allPoiItems={(ExploreContent as any).allItems || []} />
+                        </View>
+                        <View style={{ width: SCREEN_WIDTH }}>
                             <MemoizedHome key={`home-${locale}`} onNavigate={navigateTo} onLanguageChange={handleLanguageChange} />
                         </View>
                         <View style={{ width: SCREEN_WIDTH }}>
-                            {}
+                            { }
                             <MemoizedExplore key={`explore-${locale}`} category={category} setCategory={setCategory} />
                         </View>
                         <View style={{ width: SCREEN_WIDTH }}>
-                            <MemoizedItinerary key={`itinerary-${locale}`} onNavigate={navigateTo} />
+                            <MemoizedItinerary key={`itinerary-${locale}`} />
                         </View>
                         <View style={{ width: SCREEN_WIDTH }}>
-                            {}
-                            {activeIndex === 3 || transportLoaded ? <MemoizedTransport key={`transport-${locale}`} ref={transportRef} /> : <View style={{ flex: 1 }} />}
+                            { }
+                            {activeIndex === 4 || transportLoaded ? <MemoizedTransport key={`transport-${locale}`} ref={transportRef} /> : <View style={{ flex: 1 }} />}
                         </View>
                     </Animated.View>
                 </GestureDetector>
 
-                {}
+                { }
                 <Animated.View
-                    pointerEvents={activeIndex === 1 ? 'auto' : 'none'}
+                    pointerEvents={activeIndex === 2 ? 'auto' : 'none'}
                     style={[
                         styles.categoriesOverlay,
                         { backgroundColor: theme.cardBackground },
-                        categoriesAnimatedStyle
+                        categoriesAnimatedStyle,
+                        { zIndex: 5 } // Ensure it's above other content but below full overlays if needed
                     ]}
                 >
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesScroll}>
@@ -271,11 +290,13 @@ export function UnifiedTabs() {
                     </ScrollView>
                 </Animated.View>
 
-                {}
-                <View style={[styles.tabBar, {
+                { }
+                <Animated.View style={[styles.tabBar, {
                     backgroundColor: theme.cardBackground,
                     borderTopColor: theme.border,
                     zIndex: 10,
+                    // Remove opacity since we are translating it out
+                    // opacity: activeIndex === 0 ? 0 : 1, 
                     ...Platform.select({
                         ios: {
                             shadowColor: '#000',
@@ -284,15 +305,15 @@ export function UnifiedTabs() {
                             shadowRadius: 4,
                         },
                         android: {
-                            elevation: 12, 
+                            elevation: 12,
                         }
                     })
-                }]}>
-                    {renderTabItem(0, 'house.fill', i18n.t('home'))}
-                    {renderTabItem(1, 'paperplane.fill', i18n.t('explore'))}
-                    {renderTabItem(2, 'list.bullet.rectangle.portrait.fill', 'Plan')}
-                    {renderTabItem(3, 'map.fill', i18n.t('map'))}
-                </View>
+                }, tabBarAnimatedStyle]}>
+                    {renderTabItem(1, 'house.fill', i18n.t('home'))}
+                    {renderTabItem(2, 'paperplane.fill', i18n.t('explore'))}
+                    {renderTabItem(3, 'map.fill', 'Plan')}
+                    {renderTabItem(4, 'tram.fill', i18n.t('transport'))}
+                </Animated.View>
             </GestureHandlerRootView>
         </View>
     );
@@ -318,11 +339,11 @@ const styles = StyleSheet.create({
         right: 10,
         flexDirection: 'row',
         height: 60,
-        borderRadius: 30, 
+        borderRadius: 30,
         alignItems: 'center',
         justifyContent: 'space-around',
-        borderTopWidth: 0, 
-        
+        borderTopWidth: 0,
+
     },
     tabItem: {
         alignItems: 'center',
@@ -340,25 +361,25 @@ const styles = StyleSheet.create({
         bottom: 15,
         left: 10,
         right: 10,
-        height: 75, 
+        height: 75,
         zIndex: 5,
-        borderTopLeftRadius: 25, 
+        borderTopLeftRadius: 25,
         borderTopRightRadius: 25,
         borderWidth: 0,
         paddingTop: 8,
     },
     categoriesScroll: {
-        paddingHorizontal: 20, 
+        paddingHorizontal: 20,
         alignItems: 'flex-start',
-        gap: 24, 
+        gap: 24,
     },
     categoryPill: {
         paddingVertical: 8,
-        
+
     },
     categoryPillText: {
         fontSize: 14,
-        fontWeight: '800', 
+        fontWeight: '800',
         textTransform: 'uppercase',
         letterSpacing: 0.5,
     }
