@@ -1,6 +1,7 @@
 import { Colors } from '@/constants/theme';
 import { CATEGORIES } from '@/data/categories';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useFavorites } from '@/hooks/use-favorites';
 import i18n from '@/i18n';
 import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -13,6 +14,7 @@ import Animated, {
     withSpring,
     withTiming
 } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ExploreContent } from './screens/ExploreContent';
 import { HomeContent } from './screens/HomeContent';
 import { ItineraryContent } from './screens/ItineraryContent';
@@ -33,24 +35,29 @@ const MemoizedFullMap = React.memo(MapContent);
 export function UnifiedTabs() {
     const router = useRouter();
     const pathname = usePathname();
-    const params = useLocalSearchParams<{ category: string }>();
+    const params = useLocalSearchParams<{ category: string; poiId?: string }>();
 
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'light'];
+    const insets = useSafeAreaInsets();
+    const { favorites } = useFavorites();
 
 
-    const [activeIndex, setActiveIndex] = useState(1);
+    const [activeIndex, setActiveIndex] = useState(() => {
+        if (params.category === 'map') return 0;
+        return 1;
+    });
     const [category, setCategory] = useState<string>('sights');
     const [transportLoaded, setTransportLoaded] = useState(false);
     const [pendingMapOpen, setPendingMapOpen] = useState(false);
     const [locale, setLocale] = useState(i18n.locale);
 
 
-    const activeIndexRef = React.useRef(1);
+    const activeIndexRef = React.useRef(params.category === 'map' ? 0 : 1);
     const transportRef = React.useRef<TransportRef>(null);
 
 
-    const translateX = useSharedValue(-SCREEN_WIDTH);
+    const translateX = useSharedValue(params.category === 'map' ? 0 : -SCREEN_WIDTH);
     const contextX = useSharedValue(0);
 
 
@@ -75,7 +82,12 @@ export function UnifiedTabs() {
     }, [translateX, updateActiveTab]);
 
     const navigateTo = React.useCallback((path: string, cat?: string) => {
-        const index = path === '/' ? 1 : path === '/explore' ? 2 : path === '/itinerary' ? 3 : path === '/transport' ? 4 : 1;
+        // If category is map, always go to full map (index 0)
+        let index = path === '/' ? 1 : path === '/explore' ? 2 : path === '/itinerary' ? 3 : path === '/transport' ? 4 : 1;
+
+        if (cat === 'map') {
+            index = 0;
+        }
 
         if (index !== activeIndexRef.current) {
             translateX.value = withSpring(-index * SCREEN_WIDTH, {
@@ -85,15 +97,6 @@ export function UnifiedTabs() {
             });
             setActiveIndex(index);
             activeIndexRef.current = index;
-
-            if (index === 4) {
-                setTransportLoaded(true);
-                if (cat === 'map') {
-                    setPendingMapOpen(true);
-                }
-            }
-        } else if (index === 4 && cat === 'map') {
-            transportRef.current?.openMap();
         }
 
         if (cat && cat !== 'map') {
@@ -106,34 +109,15 @@ export function UnifiedTabs() {
     };
 
 
-    useEffect(() => {
-        if (pendingMapOpen && transportLoaded && activeIndex === 2) {
-            setTimeout(() => {
-                transportRef.current?.openMap();
-                setPendingMapOpen(false);
-            }, 100);
-        }
-    }, [pendingMapOpen, transportLoaded, activeIndex]);
+
 
 
 
 
 
     useEffect(() => {
-        const index = pathname === '/' ? 0 : pathname === '/explore' ? 1 : pathname === '/transport' ? 2 : 0;
-        if (index !== activeIndex && pathname !== '/') {
-
-        }
-
-        activeIndexRef.current = activeIndex;
-    }, [activeIndex, pathname]);
-
-
-    useEffect(() => {
-        if (params.category && params.category !== category) {
-            setCategory(params.category);
-        }
-    }, [params.category]);
+        navigateTo(pathname, params.category as string);
+    }, [pathname, params.category]);
 
     const pan = Gesture.Pan()
         .enabled(activeIndex !== 0)
@@ -245,7 +229,7 @@ export function UnifiedTabs() {
                         style={[styles.slider, animatedStyle]}
                     >
                         <View style={{ width: SCREEN_WIDTH }}>
-                            <MemoizedFullMap key={`fullmap-${locale}`} theme={theme} onClose={() => navigateTo('/')} router={router} allPoiItems={(ExploreContent as any).allItems || []} />
+                            <MemoizedFullMap key={`fullmap-${locale}`} theme={theme} onClose={() => navigateTo('/')} router={router} isFocused={activeIndex === 0} favorites={favorites} focusId={params.poiId} />
                         </View>
                         <View style={{ width: SCREEN_WIDTH }}>
                             <MemoizedHome key={`home-${locale}`} onNavigate={navigateTo} onLanguageChange={handleLanguageChange} />
@@ -271,7 +255,7 @@ export function UnifiedTabs() {
                         styles.categoriesOverlay,
                         { backgroundColor: theme.cardBackground },
                         categoriesAnimatedStyle,
-                        { zIndex: 5 } // Ensure it's above other content but below full overlays if needed
+                        { zIndex: 5, bottom: 10 + insets.bottom } // Ensure it's above other content but below full overlays if needed
                     ]}
                 >
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesScroll}>
@@ -295,6 +279,7 @@ export function UnifiedTabs() {
                     backgroundColor: theme.cardBackground,
                     borderTopColor: theme.border,
                     zIndex: 10,
+                    bottom: 10 + insets.bottom,
                     // Remove opacity since we are translating it out
                     // opacity: activeIndex === 0 ? 0 : 1, 
                     ...Platform.select({

@@ -1,6 +1,12 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { MaterialIcons } from '@expo/vector-icons';
+import polyline from '@mapbox/polyline';
 import Mapbox from '@rnmapbox/maps';
+import distance from '@turf/distance';
+import { lineString, point } from '@turf/helpers';
+import lineSlice from '@turf/line-slice';
+import nearestPointOnLine from '@turf/nearest-point-on-line';
+import * as Location from 'expo-location';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     Dimensions,
@@ -20,7 +26,7 @@ import Animated, {
     SlideInLeft,
     SlideOutDown
 } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // --- Assets/Data assumed from your imports ---
 import { ACTIVITIES } from '@/data/activities';
@@ -39,6 +45,8 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CITY_CENTER = [7.74894, 48.58177];
 const INITIAL_ZOOM = 13.0;
 const CLOSED_STOP_NAMES = ["Langstross/Grand Rue", "Broglie", "Alt Winmärik-Vieux Marché aux Vins"];
+const MAPBOX_ACCESS_TOKEN = 'pk.eyJ1Ijoic3BlY3RydWgiLCJhIjoiY21rNG5sNmh3MDF6NjNkczl5cGM3Ynl2aSJ9.U3vf9ao95WB7Xxx4n2Ihug';
+const ROUTE_COLORS = ['#FF4B4B', '#4B7BFF', '#4BFF4B', '#FFD700', '#FF00FF', '#00FFFF', '#FF8C00', '#8A2BE2'];
 
 const getCategoryColor = (type: string) => CATEGORIES.find(c => c.nameKey === type)?.color || '#888';
 const getCategoryIcon = (type: string) => {
@@ -121,10 +129,11 @@ const ParkingMapMarker = ({ item, isFocused, onSelect, theme }: { item: ParkingD
 };
 
 // --- Main Extracted Map Component ---
-export const MapContent = ({ theme, onClose, router }: any) => {
+export const MapContent = ({ theme, onClose, router, isFocused, favorites = [], focusId }: any) => {
     const mapCamera = useRef<Mapbox.Camera>(null);
     const [search, setSearch] = useState('');
     const [mapFilter, setMapFilter] = useState('all');
+    const insets = useSafeAreaInsets();
 
     // ALL POIS
     const allPoiItems = useMemo(() => {
@@ -154,6 +163,8 @@ export const MapContent = ({ theme, onClose, router }: any) => {
     const [fetchError, setFetchError] = useState<string | null>(null);
     const [walkRadiusGeoJSON, setWalkRadiusGeoJSON] = useState<any>(null);
     const [followingUser, setFollowingUser] = useState(false);
+    const [userLocation, setUserLocation] = useState<any>(null);
+    const [routeCoords, setRouteCoords] = useState<any[]>([]);
 
     // Parking Hooks
     const { data: parkingData } = useParkingData();
@@ -213,10 +224,216 @@ export const MapContent = ({ theme, onClose, router }: any) => {
         else setAllArrivals([]);
     }, [selectedStop]);
 
-    const handleLocateMe = () => {
+    const handleLocateMe = async () => {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+            return;
+        }
         setFollowingUser(true);
-        mapCamera.current?.setCamera({ centerCoordinate: CITY_CENTER, zoomLevel: 15, animationDuration: 1500, animationMode: 'flyTo' });
     };
+
+    useEffect(() => {
+        if (isFocused && !focusId) {
+            handleLocateMe();
+        }
+    }, [isFocused, focusId]);
+
+    useEffect(() => {
+        if (focusId) {
+            const item = allPoiItems.find((i: any) => i.id === focusId);
+            if (item) {
+                setSelectedPoi(item);
+                if (item.coordinates) {
+                    mapCamera.current?.setCamera({
+                        centerCoordinate: [item.coordinates.longitude, item.coordinates.latitude],
+                        zoomLevel: 16,
+                        animationDuration: 1000
+                    });
+                }
+            }
+        }
+    }, [focusId, allPoiItems]);
+
+    useEffect(() => {
+        const fetchRoute = async () => {
+            // Need at least 1 favorite if we have user location, or 2 favorites if we don't
+            if (!favorites || favorites.length === 0) {
+                setRouteCoords([]);
+                return;
+            }
+
+            const favItems = favorites.map((id: string) => allPoiItems.find((i: any) => i.id === id)).filter(Boolean);
+
+            let items = [...favItems];
+
+            // Prepend User Location if available
+            if (userLocation) {
+                items = [{ coordinates: userLocation }, ...favItems];
+            }
+
+            if (items.length < 2) {
+                setRouteCoords([]);
+                return;
+            }
+
+            const newSegments: any[] = [];
+
+            for (let i = 0; i < items.length - 1; i++) {
+                const start = items[i];
+                const end = items[i + 1];
+                if (!start.coordinates || !end.coordinates) continue;
+
+                const startCoord = [start.coordinates.longitude, start.coordinates.latitude];
+                const endCoord = [end.coordinates.longitude, end.coordinates.latitude];
+
+                // 1. Find ALL Candidate Stops within 1km
+                const maxWalkDist = 1.0; // 1km radius
+                const startStops: any[] = [];
+                const endStops: any[] = [];
+
+                for (const f of TRANSPORT_STOPS.features) {
+                    const stopCoord = f.geometry.coordinates;
+                    const dStart = distance(point(startCoord), point(stopCoord));
+                    const dEnd = distance(point(endCoord), point(stopCoord));
+
+                    if (dStart <= maxWalkDist) {
+                        startStops.push({ ...f.properties, coordinates: stopCoord, dist: dStart });
+                    }
+                    if (dEnd <= maxWalkDist) {
+                        endStops.push({ ...f.properties, coordinates: stopCoord, dist: dEnd });
+                    }
+                }
+
+                // Sort by distance (closest first)
+                startStops.sort((a, b) => a.dist - b.dist);
+                endStops.sort((a, b) => a.dist - b.dist);
+
+                // 2. Find Best Stop Pair with Shared Line
+                let sharedLine = null;
+                let bestStartStop = null;
+                let bestEndStop = null;
+
+                // Check time: Trams run ~5am to 1am. If currently 1am-5am, skip transit.
+                const now = new Date();
+                const hour = now.getHours();
+                const isNight = hour >= 1 && hour < 5;
+
+                // Priority: Direct shared line with minimal walking
+                if (!isNight) {
+                    for (const sStop of startStops) {
+                        if (sharedLine) break; // Found a match
+                        const sLines = typeof sStop.lines === 'string' ? JSON.parse(sStop.lines) : sStop.lines;
+                        if (!Array.isArray(sLines)) continue;
+
+                        for (const eStop of endStops) {
+                            // Skip if same stop
+                            if (sStop.uniqueId === eStop.uniqueId) continue;
+
+                            const eLines = typeof eStop.lines === 'string' ? JSON.parse(eStop.lines) : eStop.lines;
+                            if (!Array.isArray(eLines)) continue;
+
+                            const common = sLines.find((l: string) => eLines.includes(l));
+                            if (common) {
+                                sharedLine = common;
+                                bestStartStop = sStop;
+                                bestEndStop = eStop;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // 3. Build Route
+                let transitFound = false;
+                if (sharedLine && bestStartStop && bestEndStop) {
+                    // Try to get line geometry
+                    const lineData = TRANSPORT_LINES.find(l => l.id.endsWith(sharedLine as string));
+                    if (lineData && lineData.geoJson.geometry.type === 'LineString') {
+                        try {
+                            const lineGeo = lineString(lineData.geoJson.geometry.coordinates);
+                            const startPt = point(bestStartStop.coordinates);
+                            const endPt = point(bestEndStop.coordinates);
+
+                            // Snap to line
+                            const snappedStart = nearestPointOnLine(lineGeo, startPt);
+                            const snappedEnd = nearestPointOnLine(lineGeo, endPt);
+
+                            const sliced = lineSlice(snappedStart, snappedEnd, lineGeo);
+
+                            // We have 3 segments: Walk -> Tram -> Walk
+                            // A. Start Walk
+                            const urlA = `https://api.mapbox.com/directions/v5/mapbox/walking/${startCoord.join(',')};${bestStartStop.coordinates.join(',')}?geometries=polyline6&overview=full&access_token=${MAPBOX_ACCESS_TOKEN}`;
+                            const respA = await fetch(urlA).then(r => r.json());
+                            if (respA.routes?.[0]) {
+                                newSegments.push({
+                                    coordinates: polyline.decode(respA.routes[0].geometry, 6).map((c: any) => [c[1], c[0]]),
+                                    color: '#999', // Walking color
+                                    type: 'walking'
+                                });
+                            }
+
+                            // B. Tram Ride
+                            newSegments.push({
+                                coordinates: sliced.geometry.coordinates,
+                                color: lineData.color,
+                                type: 'transit'
+                            });
+
+                            // C. End Walk
+                            const urlC = `https://api.mapbox.com/directions/v5/mapbox/walking/${bestEndStop.coordinates.join(',')};${endCoord.join(',')}?geometries=polyline6&overview=full&access_token=${MAPBOX_ACCESS_TOKEN}`;
+                            const respC = await fetch(urlC).then(r => r.json());
+                            if (respC.routes?.[0]) {
+                                newSegments.push({
+                                    coordinates: polyline.decode(respC.routes[0].geometry, 6).map((c: any) => [c[1], c[0]]),
+                                    color: '#999',
+                                    type: 'walking'
+                                });
+                            }
+                            transitFound = true;
+                        } catch (e) {
+                            console.warn("Error slicing line, falling back to walk", e);
+                        }
+                    }
+                }
+
+                if (!transitFound) {
+                    // Fallback: Full Walking Route
+                    const url = `https://api.mapbox.com/directions/v5/mapbox/walking/${startCoord.join(',')};${endCoord.join(',')}?geometries=polyline6&overview=full&access_token=${MAPBOX_ACCESS_TOKEN}`;
+
+                    try {
+                        const response = await fetch(url);
+                        const json = await response.json();
+                        if (json.routes && json.routes.length > 0) {
+                            const geometry = json.routes[0].geometry;
+                            const decoded = polyline.decode(geometry, 6);
+                            const flipped = decoded.map((c: any) => [c[1], c[0]]);
+
+                            newSegments.push({
+                                coordinates: flipped,
+                                color: ROUTE_COLORS[i % ROUTE_COLORS.length],
+                                type: 'walking'
+                            });
+                        }
+                    } catch (error) {
+                        console.error("Error fetching segment:", error);
+                    }
+                }
+            }
+            setRouteCoords(newSegments);
+        };
+
+        fetchRoute();
+    }, [favorites, allPoiItems, userLocation]);
+
+    useEffect(() => {
+        (async () => {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status === 'granted') {
+                const loc = await Location.getCurrentPositionAsync({});
+                setUserLocation(loc.coords);
+            }
+        })();
+    }, []);
 
     const handleResetNorth = () => {
         mapCamera.current?.setCamera({ heading: 0, animationDuration: 500 });
@@ -235,6 +452,22 @@ export const MapContent = ({ theme, onClose, router }: any) => {
             geometry: line.geoJson.geometry
         }))
     }), [isLayersValues.mainLines]);
+
+    const routeSource = useMemo(() => {
+        if (!routeCoords || routeCoords.length === 0) return null;
+
+        return {
+            type: 'FeatureCollection' as const,
+            features: routeCoords.map((segment, index) => ({
+                type: 'Feature' as const,
+                properties: {
+                    color: segment.color,
+                    type: segment.type
+                },
+                geometry: { type: 'LineString' as const, coordinates: segment.coordinates }
+            }))
+        };
+    }, [routeCoords]);
 
     const stopsSource = useMemo(() => {
         let features = [...TRANSPORT_STOPS.features];
@@ -281,7 +514,11 @@ export const MapContent = ({ theme, onClose, router }: any) => {
                     setWalkRadiusGeoJSON(null);
                 }}
             >
-                <Mapbox.UserLocation visible={true} />
+                <Mapbox.UserLocation
+                    visible={true}
+                    androidRenderMode="gps"
+                    showsUserHeadingIndicator={true}
+                />
                 <Mapbox.Camera
                     ref={mapCamera}
                     defaultSettings={{ centerCoordinate: CITY_CENTER, zoomLevel: INITIAL_ZOOM }}
@@ -289,6 +526,35 @@ export const MapContent = ({ theme, onClose, router }: any) => {
                     followUserMode={Mapbox.UserTrackingMode.Follow}
                     onUserTrackingModeChange={(e) => { if (!e.nativeEvent.payload.followUserLocation) setFollowingUser(false); }}
                 />
+
+                {/* Route Line */}
+                {routeSource && (
+                    <Mapbox.ShapeSource id="routeSource" shape={routeSource}>
+                        <Mapbox.LineLayer
+                            id="routeLayerSolid"
+                            filter={['==', ['get', 'type'], 'transit']}
+                            style={{
+                                lineColor: ['get', 'color'],
+                                lineWidth: 4,
+                                lineCap: 'round',
+                                lineJoin: 'round',
+                                lineOpacity: 0.8
+                            }}
+                        />
+                        <Mapbox.LineLayer
+                            id="routeLayerDashed"
+                            filter={['==', ['get', 'type'], 'walking']}
+                            style={{
+                                lineColor: ['get', 'color'],
+                                lineWidth: 4,
+                                lineDasharray: [2, 1],
+                                lineCap: 'round',
+                                lineJoin: 'round',
+                                lineOpacity: 0.8
+                            }}
+                        />
+                    </Mapbox.ShapeSource>
+                )}
 
                 {/* Lines */}
                 <Mapbox.ShapeSource id="linesSource" shape={transportSource}>
@@ -434,7 +700,7 @@ export const MapContent = ({ theme, onClose, router }: any) => {
 
             {/* 3. Bottom Category Filters */}
             {!selectedPoi && !selectedStop && !selectedParking && (
-                <View style={styles.filterContainer}>
+                <View style={[styles.filterContainer, { bottom: 20 + insets.bottom }]}>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
                         {['sights', 'restaurants', 'museums', 'activities'].map(f => {
                             const isActive = mapFilter === f && isLayersValues.landmarks;
@@ -469,7 +735,7 @@ export const MapContent = ({ theme, onClose, router }: any) => {
 
             {/* 4. POI Detail Card */}
             {selectedPoi && (
-                <Animated.View entering={SlideInDown} exiting={FadeOutDown} style={[styles.detailCard, { backgroundColor: theme.cardBackground, zIndex: 1000 }]}>
+                <Animated.View entering={SlideInDown} exiting={FadeOutDown} style={[styles.detailCard, { backgroundColor: theme.cardBackground, zIndex: 1000, bottom: 30 + insets.bottom }]}>
                     <TouchableOpacity
                         activeOpacity={0.9}
                         style={{ flexDirection: 'row', gap: 12, paddingBottom: 12 }}
@@ -525,7 +791,7 @@ export const MapContent = ({ theme, onClose, router }: any) => {
 
             {/* 5. StopDetail Card */}
             {selectedStop && (
-                <Animated.View entering={SlideInDown} exiting={FadeOutDown} style={[styles.detailCard, { backgroundColor: theme.cardBackground, zIndex: 1000 }]}>
+                <Animated.View entering={SlideInDown} exiting={FadeOutDown} style={[styles.detailCard, { backgroundColor: theme.cardBackground, zIndex: 1000, bottom: 30 + insets.bottom }]}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                         <Text style={[styles.detailTitle, { color: theme.text, flex: 1 }]}>{selectedStop.name}</Text>
                         <TouchableOpacity style={[styles.closeLineButton, { backgroundColor: theme.border }]} onPress={() => setSelectedStop(null)}>
@@ -612,7 +878,7 @@ export const MapContent = ({ theme, onClose, router }: any) => {
             {/* Parking Details */}
             {
                 selectedParking && (
-                    <Animated.View entering={SlideInDown} exiting={FadeOutDown} style={[styles.detailCard, { backgroundColor: theme.cardBackground }]}>
+                    <Animated.View entering={SlideInDown} exiting={FadeOutDown} style={[styles.detailCard, { backgroundColor: theme.cardBackground, bottom: 30 + insets.bottom }]}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Text style={[styles.detailTitle, { color: theme.text, flex: 1 }]}>{selectedParking.nom_parking?.replace('Parking ', '')}</Text>
                             <TouchableOpacity style={[styles.closeLineButton, { backgroundColor: theme.border }]} onPress={() => setSelectedParking(null)}>
