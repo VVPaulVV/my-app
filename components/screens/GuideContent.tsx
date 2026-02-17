@@ -4,12 +4,14 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import i18n from '@/i18n';
 import React from 'react';
 import { Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export function GuideContent({ onClose }: { onClose?: () => void }) {
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'light'];
+    const insets = useSafeAreaInsets();
 
     const GuideSection = ({ title, icon, children }: { title: string, icon: string, children: React.ReactNode }) => (
         <View style={[styles.section, { backgroundColor: theme.cardBackground, borderColor: theme.border }]}>
@@ -30,12 +32,12 @@ export function GuideContent({ onClose }: { onClose?: () => void }) {
 
     return (
         <View style={[styles.sheetContainer, { backgroundColor: theme.background }]}>
-            {}
+            { }
             <View style={styles.handleWrapper}>
                 <View style={[styles.handle, { backgroundColor: theme.border }]} />
             </View>
 
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: 60 + insets.bottom }]} showsVerticalScrollIndicator={false}>
                 <View style={[styles.header, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
                     <Text style={[styles.title, { color: theme.text }]}>{i18n.t('guideTitle')}</Text>
                     {onClose && (
@@ -183,7 +185,7 @@ const styles = StyleSheet.create({
     },
     header: {
         paddingVertical: 12,
-        paddingLeft: 8, 
+        paddingLeft: 8,
         paddingRight: 8,
         marginBottom: 8,
     },

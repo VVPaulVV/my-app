@@ -30,7 +30,7 @@ const translations = {
         sights: 'Sights',
         settings: 'Settings',
         selectLanguage: 'Select Language',
-        
+
         MUSTSEE: 'Must See',
         SIGHTS: 'Sights',
         RESTAURANTS: 'Restaurants',
@@ -98,6 +98,11 @@ const translations = {
         dailyTips: 'Daily Tips',
         didYouKnow: 'Did you know?',
         favorites: 'Favorites',
+        itinerary: 'Itinerary',
+        viewRoute: 'View Route',
+        emptyItineraryTitle: 'Your Itinerary is Empty',
+        emptyItineraryDesc: 'Start adding sights to your itinerary to plan your perfect trip.',
+        browseSights: 'Browse Sights',
     },
     fr: {
         languageName: 'Français',
@@ -190,6 +195,11 @@ const translations = {
         dailyTips: 'Astuces du Jour',
         didYouKnow: 'Le saviez-vous ?',
         favorites: 'Favoris',
+        itinerary: 'Itinéraire',
+        viewRoute: 'Voir l\'itinéraire',
+        emptyItineraryTitle: 'Votre itinéraire est vide',
+        emptyItineraryDesc: 'Commencez à ajouter des lieux à votre itinéraire pour planifier votre voyage parfait.',
+        browseSights: 'Parcourir les lieux',
     },
     de: {
         languageName: 'Deutsch',
@@ -278,6 +288,11 @@ const translations = {
         dailyTips: 'Täglich Tipps',
         didYouKnow: 'Wussten Sie schon?',
         favorites: 'Favoriten',
+        itinerary: 'Reiseroute',
+        viewRoute: 'Route anzeigen',
+        emptyItineraryTitle: 'Ihre Reiseroute ist leer',
+        emptyItineraryDesc: 'Fügen Sie Sehenswürdigkeiten zu Ihrer Reiseroute hinzu, um Ihre perfekte Reise zu planen.',
+        browseSights: 'Sehenswürdigkeiten durchsuchen',
     },
     es: {
         languageName: 'Español',
@@ -366,6 +381,11 @@ const translations = {
         dailyTips: 'Consejos Diarios',
         didYouKnow: '¿Sabía qué?',
         favorites: 'Favoritos',
+        itinerary: 'Itinerario',
+        viewRoute: 'Ver Ruta',
+        emptyItineraryTitle: 'Su itinerario está vacío',
+        emptyItineraryDesc: 'Comience a agregar lugares a su itinerario para planificar su viaje perfecto.',
+        browseSights: 'Explorar lugares',
     },
     it: {
         languageName: 'Italiano',
@@ -454,6 +474,11 @@ const translations = {
         dailyTips: 'Consigli Quotidiani',
         didYouKnow: 'Lo sapevi?',
         favorites: 'Preferiti',
+        itinerary: 'Itinerario',
+        viewRoute: 'Vedi percorso',
+        emptyItineraryTitle: 'Il tuo itinerario è vuoto',
+        emptyItineraryDesc: 'Inizia ad aggiungere luoghi al tuo itinerario per pianificare il tuo viaggio perfetto.',
+        browseSights: 'Sfoglia luoghi',
     },
     ru: {
         languageName: 'Русский',
@@ -542,6 +567,11 @@ const translations = {
         dailyTips: 'Советы дня',
         didYouKnow: 'А вы знали?',
         favorites: 'Избранное',
+        itinerary: 'Маршрут',
+        viewRoute: 'Показать маршрут',
+        emptyItineraryTitle: 'Ваш маршрут пуст',
+        emptyItineraryDesc: 'Начните добавлять места в маршрут, чтобы спланировать идеальное путешествие.',
+        browseSights: 'Просмотр мест',
     },
     tr: {
         languageName: 'Türkçe',
@@ -630,6 +660,11 @@ const translations = {
         dailyTips: 'Günlük İpuçları',
         didYouKnow: 'Biliyor muydunuz?',
         favorites: 'Favoriler',
+        itinerary: 'Güzergah',
+        viewRoute: 'Rotayı Görüntüle',
+        emptyItineraryTitle: 'Güzergahınız Boş',
+        emptyItineraryDesc: 'Mükemmel gezinizi planlamak için güzergahınıza yerler eklemeye başlayın.',
+        browseSights: 'Yerlere Göz At',
     },
 
     pt: {
@@ -719,6 +754,11 @@ const translations = {
         dailyTips: 'Dicas Diárias',
         didYouKnow: 'Você sabia?',
         favorites: 'Favoritos',
+        itinerary: 'Itinerário',
+        viewRoute: 'Ver Rota',
+        emptyItineraryTitle: 'Seu itinerário está vazio',
+        emptyItineraryDesc: 'Comece a adicionar atrações ao seu itinerário para planejar sua viagem perfeita.',
+        browseSights: 'Navegar por Atrações',
     }
 };
 
@@ -762,7 +802,7 @@ export const loadLanguage = async () => {
     } catch (e) {
         console.error('Failed to load language', e);
     }
-    
+
     const deviceLang = getLocales()?.[0]?.languageCode ?? 'en';
     i18n.locale = deviceLang;
     return deviceLang;

@@ -1,11 +1,11 @@
 import i18n, { tData } from '@/i18n';
-import { Ionicons } from '@expo/vector-icons'; 
+import { Ionicons } from '@expo/vector-icons';
 import Mapbox from '@rnmapbox/maps';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Linking, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 
@@ -24,23 +24,23 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useFavorites } from '@/hooks/use-favorites';
 import * as Haptics from 'expo-haptics';
 
-const ALSACE_CENTER = [7.70, 48.56]; 
+
 
 export default function SightDetailScreen() {
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'light'];
 
-    
+
     const params = useLocalSearchParams();
     const id = params.id as string;
 
     const router = useRouter();
     const navigation = useNavigation();
 
-    
-    const [isMapExpanded, setIsMapExpanded] = useState(false);
 
-    
+
+
+
     const sight = (SIGHTS.map(s => ({ ...s, category: 'sights' as const })).find(s => s.id === id) ||
         MUSEUMS.map(m => ({ ...m, category: 'museums' as const })).find(m => m.id === id) ||
         RESTAURANTS.map(r => ({ ...r, category: 'restaurants' as const })).find(r => r.id === id) ||
@@ -63,9 +63,9 @@ export default function SightDetailScreen() {
         }
     };
 
-    
+
     const opacity = useSharedValue(0);
-    const translateY = useSharedValue(50); 
+    const translateY = useSharedValue(50);
 
     const animatedContentStyle = useAnimatedStyle(() => ({
         opacity: opacity.value,
@@ -86,15 +86,8 @@ export default function SightDetailScreen() {
     const categoryColor = CATEGORIES.find(c => c.id === sight.category)?.color || theme.primary;
 
     const handleOpenMaps = () => {
-        if (!sight?.coordinates) return;
-        const scheme = Platform.select({ ios: 'maps:0,0?q=', android: 'geo:0,0?q=' });
-        const latLng = `${sight.coordinates.latitude},${sight.coordinates.longitude}`;
-        const label = sight.name;
-        const url = Platform.select({
-            ios: `${scheme}${label}@${latLng}`,
-            android: `${scheme}${latLng}(${label})`
-        });
-        if (url) Linking.openURL(url);
+        router.dismissAll();
+        router.push({ pathname: '/', params: { category: 'map', poiId: sight?.id } });
     };
 
     useEffect(() => {
@@ -105,7 +98,7 @@ export default function SightDetailScreen() {
     return (
         <View style={[styles.container, { backgroundColor: theme.background }]}>
             <Stack.Screen options={{ title: '', headerShown: false }} />
-            {}
+            { }
             <View style={styles.imageContainer}>
                 <Image source={sight.image} style={styles.image} contentFit="cover" transition={1000} />
                 <LinearGradient colors={['transparent', 'rgba(0,0,0,0.8)']} style={styles.gradient} />
@@ -115,36 +108,36 @@ export default function SightDetailScreen() {
             <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
                 <View style={{ height: 350 }} />
                 <Animated.View style={[styles.detailsCard, { backgroundColor: theme.cardBackground }, animatedContentStyle]}>
-                    {}
+                    { }
                     <View style={[styles.categoryChip, { backgroundColor: categoryColor + '20' }]}>
                         <Text style={[styles.categoryText, { color: categoryColor }]}>{i18n.t(sight.category)}</Text>
                     </View>
 
                     <Text style={[styles.title, { color: theme.text }]}>{tData(sight, 'name')}</Text>
 
-                    {}
+                    { }
                     <TouchableOpacity activeOpacity={0.7} onPress={handleOpenMaps} style={styles.locationRow}>
                         <Ionicons name="location-sharp" size={18} color={categoryColor} style={{ marginRight: 6 }} />
                         <Text style={[styles.locationText, { color: categoryColor }]}>{tData(sight, 'location')}</Text>
                     </TouchableOpacity>
 
-                    {}
+                    { }
                     <Text style={[styles.sectionTitle, { color: theme.text, marginTop: 24 }]}>{i18n.t('about')}</Text>
                     <Text style={[styles.description, { color: theme.text }]}>
                         {tData(sight, 'description') || tData(sight, 'shortDescription')}
                     </Text>
 
-                    {}
+                    { }
                     {
                         sight.category === 'restaurants' && (
                             <View style={{ marginTop: 24, marginBottom: 8 }}>
                                 <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: 12 }]}>{i18n.t('reservation')}</Text>
 
-                                {}
+                                { }
 
                                 {((sight as any).reservationUrl || (sight as any).phoneNumber) ? (
                                     <View style={{ gap: 12 }}>
-                                        {}
+                                        { }
                                         <TouchableOpacity
                                             disabled={!(sight as any).reservationUrl}
                                             style={{
@@ -170,11 +163,11 @@ export default function SightDetailScreen() {
                                             {(sight as any).reservationUrl && <Ionicons name="arrow-forward" size={16} color="#FFF" style={{ marginLeft: 8, opacity: 0.8 }} />}
                                         </TouchableOpacity>
 
-                                        {}
+                                        { }
                                         <TouchableOpacity
                                             disabled={!(sight as any).phoneNumber}
                                             style={{
-                                                backgroundColor: (sight as any).phoneNumber ? theme.background : theme.border, 
+                                                backgroundColor: (sight as any).phoneNumber ? theme.background : theme.border,
                                                 borderColor: (sight as any).phoneNumber ? theme.primary : 'transparent',
                                                 borderWidth: (sight as any).phoneNumber ? 2 : 0,
                                                 paddingVertical: 14,
@@ -213,7 +206,7 @@ export default function SightDetailScreen() {
                         )
                     }
 
-                    {}
+                    { }
                     {
                         sight.coordinates && (
                             <>
@@ -221,7 +214,7 @@ export default function SightDetailScreen() {
 
                                 <TouchableOpacity
                                     activeOpacity={0.9}
-                                    onPress={() => setIsMapExpanded(true)}
+                                    onPress={handleOpenMaps}
                                     style={styles.mapContainer}
                                 >
                                     <Mapbox.MapView
@@ -249,11 +242,7 @@ export default function SightDetailScreen() {
                                         </Mapbox.PointAnnotation>
                                     </Mapbox.MapView>
 
-                                    <View style={styles.mapOverlay}>
-                                        <View style={styles.expandButton}>
-                                            <Ionicons name="expand-outline" size={20} color={'#000'} />
-                                        </View>
-                                    </View>
+
 
                                     <TouchableOpacity style={[styles.openMapsButton, { backgroundColor: categoryColor }]} onPress={handleOpenMaps}>
                                         <Ionicons name="map-outline" size={16} color="#FFF" style={{ marginRight: 8 }} />
@@ -276,54 +265,7 @@ export default function SightDetailScreen() {
                 <Ionicons name={isFav ? "heart" : "heart-outline"} size={24} color={isFav ? "#FF4B4B" : theme.text} />
             </TouchableOpacity>
 
-            <Modal
-                visible={isMapExpanded}
-                animationType="fade"
-                onRequestClose={() => setIsMapExpanded(false)}
-            >
-                <View style={{ flex: 1 }}>
-                    <Mapbox.MapView
-                        style={{ flex: 1 }}
-                        styleURL={Mapbox.StyleURL.Street}
-                        
-                        scrollEnabled={true}
-                        zoomEnabled={true}
-                        pitchEnabled={true}
-                        rotateEnabled={true}
-                    >
-                        {sight.coordinates && (
-                            <>
-                                <Mapbox.Camera
-                                    defaultSettings={{
-                                        centerCoordinate: ALSACE_CENTER,
-                                        zoomLevel: 9
-                                    }}
-                                    zoomLevel={16}
-                                    centerCoordinate={[sight.coordinates.longitude, sight.coordinates.latitude]}
-                                    animationMode="flyTo"
-                                    animationDuration={2000} 
-                                />
-                                <Mapbox.PointAnnotation
-                                    id={`marker-full-${sight.id}`}
-                                    coordinate={[sight.coordinates.longitude, sight.coordinates.latitude]}
-                                >
-                                    <View style={[styles.marker, { backgroundColor: categoryColor, width: 40, height: 40, borderRadius: 20 }]}>
-                                        <View style={[styles.markerInner, { width: 12, height: 12, borderRadius: 6 }]} />
-                                    </View>
-                                </Mapbox.PointAnnotation>
-                            </>
-                        )}
-                    </Mapbox.MapView>
 
-                    {}
-                    <TouchableOpacity
-                        style={[styles.closeMapButton, { backgroundColor: theme.background }]}
-                        onPress={() => setIsMapExpanded(false)}
-                    >
-                        <Ionicons name="close" size={28} color={theme.text} />
-                    </TouchableOpacity>
-                </View>
-            </Modal>
         </View >
     );
 }

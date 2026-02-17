@@ -19,7 +19,8 @@ import Animated, {
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useFavorites } from '@/hooks/use-favorites';
-import { tData } from '@/i18n';
+import i18n, { tData } from '@/i18n';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ACTIVITIES } from '@/data/activities';
 import { CATEGORIES } from '@/data/categories';
@@ -211,6 +212,7 @@ export function ItineraryContent() {
     const router = useRouter();
     const theme = Colors[useColorScheme() ?? 'light'];
     const { favorites, reorderFavorites, toggleFavorite } = useFavorites();
+    const insets = useSafeAreaInsets();
 
     const [data, setData] = useState<string[]>(favorites);
 
@@ -254,36 +256,61 @@ export function ItineraryContent() {
 
     return (
         <View style={[styles.container, { backgroundColor: theme.background }]}>
-            <View style={styles.header}>
+            <View style={[styles.header, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
                 <Text style={[styles.headerTitle, { color: theme.text }]}>
-                    My Itinerary
+                    {i18n.t('itinerary')}
                 </Text>
+                {data.length > 0 && (
+                    <TouchableOpacity
+                        onPress={() => router.push({ pathname: '/', params: { category: 'map' } })}
+                        style={{ padding: 10, backgroundColor: theme.primary, borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                    >
+                        <IconSymbol name="map.fill" size={16} color="#FFF" />
+                        <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 14 }}>{i18n.t('viewRoute')}</Text>
+                    </TouchableOpacity>
+                )}
             </View>
 
-            <Animated.ScrollView
-                contentContainerStyle={{
-                    height: data.length * ROW_HEIGHT + LIST_MARGIN,
-                    paddingBottom: 100
-                }}
-                showsVerticalScrollIndicator={false}
-            >
-                <View style={{ marginTop: LIST_MARGIN, height: data.length * ROW_HEIGHT }}>
-                    {data.map((id, index) => (
-                        <DraggableRow
-                            key={id}
-                            id={id}
-                            index={index}
-                            data={data}
-                            sharedData={sharedData}
-                            positions={positions}
-                            theme={theme}
-                            onPress={handlePress}
-                            onDelete={handleDelete}
-                            onDragEnd={handleDragEnd}
-                        />
-                    ))}
+            {data.length === 0 ? (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 100 }}>
+                    <IconSymbol name="list.bullet.clipboard" size={48} color={theme.textSecondary} style={{ marginBottom: 16, opacity: 0.5 }} />
+                    <Text style={{ color: theme.text, fontSize: 18, fontWeight: '600', marginBottom: 8 }}>{i18n.t('emptyItineraryTitle')}</Text>
+                    <Text style={{ color: theme.textSecondary, fontSize: 14, textAlign: 'center', maxWidth: 250, lineHeight: 20 }}>
+                        {i18n.t('emptyItineraryDesc')}
+                    </Text>
+                    <TouchableOpacity
+                        onPress={() => router.push({ pathname: '/', params: { tab: 'explore' } })}
+                        style={{ marginTop: 24, paddingVertical: 12, paddingHorizontal: 24, backgroundColor: theme.cardBackground, borderRadius: 20, borderWidth: 1, borderColor: theme.border }}
+                    >
+                        <Text style={{ color: theme.primary, fontWeight: 'bold' }}>{i18n.t('browseSights')}</Text>
+                    </TouchableOpacity>
                 </View>
-            </Animated.ScrollView>
+            ) : (
+                <Animated.ScrollView
+                    contentContainerStyle={{
+                        height: data.length * ROW_HEIGHT + LIST_MARGIN,
+                        paddingBottom: 100 + insets.bottom
+                    }}
+                    showsVerticalScrollIndicator={false}
+                >
+                    <View style={{ marginTop: LIST_MARGIN, height: data.length * ROW_HEIGHT }}>
+                        {data.map((id, index) => (
+                            <DraggableRow
+                                key={id}
+                                id={id}
+                                index={index}
+                                data={data}
+                                sharedData={sharedData}
+                                positions={positions}
+                                theme={theme}
+                                onPress={handlePress}
+                                onDelete={handleDelete}
+                                onDragEnd={handleDragEnd}
+                            />
+                        ))}
+                    </View>
+                </Animated.ScrollView>
+            )}
         </View>
     );
 }

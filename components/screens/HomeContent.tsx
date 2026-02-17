@@ -15,7 +15,7 @@ import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Dimensions, FlatList, Image, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { Easing, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -114,6 +114,7 @@ export function HomeContent({ onNavigate, onLanguageChange }: { onNavigate: (pat
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'light'];
     const { favorites } = useFavorites();
+    const insets = useSafeAreaInsets();
 
     const favoriteSights = [...SIGHTS, ...MUSEUMS, ...RESTAURANTS, ...ACTIVITIES]
         .filter(item => favorites.includes(item.id));
@@ -197,8 +198,8 @@ export function HomeContent({ onNavigate, onLanguageChange }: { onNavigate: (pat
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                {}
+            <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: 60 + insets.bottom }]} showsVerticalScrollIndicator={false}>
+                { }
                 <View style={styles.header}>
                     <View>
                         <Text style={[styles.greeting, { color: theme.textSecondary }]}>{i18n.t('welcome')}</Text>
@@ -216,7 +217,7 @@ export function HomeContent({ onNavigate, onLanguageChange }: { onNavigate: (pat
                     </TouchableOpacity>
                 </View>
 
-                {}
+                { }
                 {featuredSight && (
                     <TouchableOpacity
                         activeOpacity={0.9}
@@ -234,7 +235,7 @@ export function HomeContent({ onNavigate, onLanguageChange }: { onNavigate: (pat
                     </TouchableOpacity>
                 )}
 
-                {}
+                { }
                 <View style={[styles.sectionHeader, { marginTop: 10 }]}>
                     <Text style={[styles.sectionTitle, { color: theme.text }]}>{i18n.t('dailyTips')}</Text>
                 </View>
@@ -259,11 +260,11 @@ export function HomeContent({ onNavigate, onLanguageChange }: { onNavigate: (pat
                     ))}
                 </ScrollView>
 
-                {}
+                { }
                 {favoriteSights.length > 0 && (
                     <ExploreSection title={i18n.t('favorites') || 'Favorites'} data={favoriteSights} categoryId="favorites" />
                 )}
-                {}
+                { }
                 <View style={styles.sectionHeader}>
                     <Text style={[styles.sectionTitle, { color: theme.text }]}>{i18n.t('exploreTitle')}</Text>
                 </View>
@@ -282,7 +283,7 @@ export function HomeContent({ onNavigate, onLanguageChange }: { onNavigate: (pat
                     ))}
                 </View>
 
-                {}
+                { }
                 <View style={styles.sectionHeader}>
                     <Text style={[styles.sectionTitle, { color: theme.text }]}>{i18n.t('quickActions')}</Text>
                 </View>
@@ -319,7 +320,7 @@ export function HomeContent({ onNavigate, onLanguageChange }: { onNavigate: (pat
                 </View>
             </ScrollView>
 
-            {}
+            { }
             <Modal
                 visible={languageModalVisible}
                 transparent={true}
@@ -372,7 +373,7 @@ export function HomeContent({ onNavigate, onLanguageChange }: { onNavigate: (pat
                 </View>
             </Modal>
 
-            {}
+            { }
             <ExpandedTipOverlay tip={selectedTip} onClose={handleCloseTip} />
         </SafeAreaView>
     );
