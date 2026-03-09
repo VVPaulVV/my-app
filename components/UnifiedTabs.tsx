@@ -22,8 +22,10 @@ import { MapContent } from './screens/MapContent';
 import { TransportContent, TransportRef } from './screens/TransportContent';
 import { IconSymbol } from './ui/icon-symbol';
 
+
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const TAB_COUNT = 5;
+
 
 
 const MemoizedHome = React.memo(HomeContent);
@@ -31,6 +33,7 @@ const MemoizedExplore = React.memo(ExploreContent);
 const MemoizedTransport = React.memo(TransportContent);
 const MemoizedItinerary = React.memo(ItineraryContent);
 const MemoizedFullMap = React.memo(MapContent);
+
 
 export function UnifiedTabs() {
     const router = useRouter();
@@ -65,11 +68,23 @@ export function UnifiedTabs() {
         if (index !== activeIndexRef.current) {
             setActiveIndex(index);
             activeIndexRef.current = index;
-            if (index === 3) {
+            if (index === 4) {
                 setTransportLoaded(true);
             }
+
+            // Sync with URL params to ensure "back" works correctly
+            if (index === 0) {
+                if (params.category !== 'map') {
+                    router.setParams({ category: 'map' });
+                }
+            } else {
+                // Clear the map param if we are on any other tab
+                if (params.category === 'map') {
+                    router.setParams({ category: undefined });
+                }
+            }
         }
-    }, []);
+    }, [router, params.category]);
 
     const switchTab = React.useCallback((index: number) => {
 
@@ -85,9 +100,17 @@ export function UnifiedTabs() {
         // If category is map, always go to full map (index 0)
         let index = path === '/' ? 1 : path === '/explore' ? 2 : path === '/itinerary' ? 3 : path === '/transport' ? 4 : 1;
 
+        if (path === '/batorama') {
+            if (pathname !== '/batorama') {
+                router.push('/batorama');
+            }
+            return;
+        }
+
         if (cat === 'map') {
             index = 0;
         }
+
 
         if (index !== activeIndexRef.current) {
             translateX.value = withSpring(-index * SCREEN_WIDTH, {
@@ -95,14 +118,13 @@ export function UnifiedTabs() {
                 stiffness: 150,
                 mass: 0.8
             });
-            setActiveIndex(index);
-            activeIndexRef.current = index;
+            updateActiveTab(index);
         }
 
         if (cat && cat !== 'map') {
             setCategory(cat);
         }
-    }, [translateX]);
+    }, [translateX, pathname, router, updateActiveTab]);
 
     const handleLanguageChange = (newLocale: string) => {
         setLocale(newLocale);
@@ -116,8 +138,9 @@ export function UnifiedTabs() {
 
 
     useEffect(() => {
+        if (pathname === '/batorama') return;
         navigateTo(pathname, params.category as string);
-    }, [pathname, params.category]);
+    }, [pathname, params.category, navigateTo]);
 
     const pan = Gesture.Pan()
         .enabled(activeIndex !== 0)
@@ -203,6 +226,7 @@ export function UnifiedTabs() {
 
         const translateYValue = isExplore ? -36 : 0;
 
+
         return {
             transform: [{ translateY: withTiming(translateYValue, { duration: 250 }) }],
             opacity: withTiming(isExplore ? 1 : 0, { duration: 200 }),
@@ -229,22 +253,27 @@ export function UnifiedTabs() {
                         style={[styles.slider, animatedStyle]}
                     >
                         <View style={{ width: SCREEN_WIDTH }}>
-                            <MemoizedFullMap key={`fullmap-${locale}`} theme={theme} onClose={() => navigateTo('/')} router={router} isFocused={activeIndex === 0} favorites={favorites} focusId={params.poiId} />
+                            {(activeIndex === 0 || transportLoaded) ? (
+                                <MemoizedFullMap key={`fullmap-${locale}`} theme={theme} onNavigate={navigateTo} onClose={() => navigateTo('/')} router={router} isFocused={activeIndex === 0} favorites={favorites} focusId={params.poiId} />
+                            ) : (
+                                <View style={{ flex: 1, backgroundColor: theme.background }} />
+                            )}
                         </View>
                         <View style={{ width: SCREEN_WIDTH }}>
                             <MemoizedHome key={`home-${locale}`} onNavigate={navigateTo} onLanguageChange={handleLanguageChange} />
                         </View>
                         <View style={{ width: SCREEN_WIDTH }}>
-                            { }
+                            {/* Explore */}
                             <MemoizedExplore key={`explore-${locale}`} category={category} setCategory={setCategory} />
                         </View>
                         <View style={{ width: SCREEN_WIDTH }}>
                             <MemoizedItinerary key={`itinerary-${locale}`} />
                         </View>
                         <View style={{ width: SCREEN_WIDTH }}>
-                            { }
+                            {/* Transport */}
                             {activeIndex === 4 || transportLoaded ? <MemoizedTransport key={`transport-${locale}`} ref={transportRef} /> : <View style={{ flex: 1 }} />}
                         </View>
+
                     </Animated.View>
                 </GestureDetector>
 
@@ -296,9 +325,11 @@ export function UnifiedTabs() {
                 }, tabBarAnimatedStyle]}>
                     {renderTabItem(1, 'house.fill', i18n.t('home'))}
                     {renderTabItem(2, 'paperplane.fill', i18n.t('explore'))}
-                    {renderTabItem(3, 'map.fill', 'Plan')}
+                    {renderTabItem(3, 'map.fill', i18n.t('itinerary'))}
                     {renderTabItem(4, 'tram.fill', i18n.t('transport'))}
+
                 </Animated.View>
+
             </GestureHandlerRootView>
         </View>
     );
@@ -315,7 +346,7 @@ const styles = StyleSheet.create({
     slider: {
         flex: 1,
         flexDirection: 'row',
-        width: SCREEN_WIDTH * TAB_COUNT,
+        width: SCREEN_WIDTH * 5,
     },
     tabBar: {
         position: 'absolute',

@@ -1,6 +1,5 @@
 import { SightCard } from '@/components/SightCard';
 import { Colors } from '@/constants/theme';
-import { ACTIVITIES } from '@/data/activities';
 import { MUSEUMS } from '@/data/museums';
 import { RESTAURANTS } from '@/data/restaurants';
 import { SIGHTS } from '@/data/sights';
@@ -28,7 +27,6 @@ const getCategoryIcon = (type: string) => {
         case 'sights': return 'star.fill';
         case 'restaurants': return 'fork.knife';
         case 'museums': return 'building.columns.fill';
-        case 'activities': return 'figure.walk';
         default: return 'map.fill';
     }
 };
@@ -47,8 +45,7 @@ export function ExploreContent({ category, setCategory }: ExploreContentProps) {
     const allItems = useMemo(() => [
         ...(SIGHTS as any[]).map(i => ({ ...i, type: 'sights' })),
         ...(RESTAURANTS as any[]).map(i => ({ ...i, type: 'restaurants' })),
-        ...(MUSEUMS as any[]).map(i => ({ ...i, type: 'museums' })),
-        ...(ACTIVITIES as any[]).map(i => ({ ...i, type: 'activities' }))
+        ...(MUSEUMS as any[]).map(i => ({ ...i, type: 'museums' }))
     ], []);
 
     const normalize = (str: string) => str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : "";

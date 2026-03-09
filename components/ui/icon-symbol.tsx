@@ -14,7 +14,7 @@ const MAPPING = {
   'paperplane.fill': 'send',
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
-  
+
   'xmark': 'close',
   'xmark.circle.fill': 'cancel',
   'map': 'map',
@@ -22,6 +22,9 @@ const MAPPING = {
   'tram.fill': 'tram',
   'bus.fill': 'directions-bus',
   'info.circle': 'info',
+  'info.circle.fill': 'info',
+  'phone.fill': 'phone',
+  'globe': 'public',
   'arrow.up.right': 'arrow-outward',
   'arrow.left': 'arrow-back',
   'book.fill': 'book',
@@ -36,21 +39,25 @@ const MAPPING = {
   'heart': 'favorite-border',
   'heart.fill': 'favorite',
   'building.2': 'business',
+  'building.2.fill': 'business',
   'sparkles': 'auto-awesome',
   'mappin.and.ellipse': 'place',
   'suit.heart.fill': 'favorite',
   'checkmark.circle.fill': 'check-circle',
   'circle': 'radio-button-unchecked',
-  
+
   'line.3.horizontal': 'menu',
   'location.north.circle': 'explore',
   'magnifyingglass': 'search',
-  'square.stack.3d.up': 'layers', 
-  'safari': 'explore', 
+  'square.stack.3d.up': 'layers',
+  'safari': 'explore',
   'trash.fill': 'delete',
   'list.bullet.rectangle.portrait.fill': 'list',
   'plus': 'add',
+  'checkmark': 'check',
+  'ferry.fill': 'directions-boat',
 } as IconMapping;
+
 
 
 export function IconSymbol({

@@ -13,7 +13,6 @@ import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from '
 const MAPBOX_TOKEN = 'pk.eyJ1Ijoic3BlY3RydWgiLCJhIjoiY21rNG5sNmh3MDF6NjNkczl5cGM3Ynl2aSJ9.U3vf9ao95WB7Xxx4n2Ihug';
 Mapbox.setAccessToken(MAPBOX_TOKEN);
 
-import { ACTIVITIES } from '@/data/activities';
 import { CATEGORIES } from '@/data/categories';
 import { MUSEUMS } from '@/data/museums';
 import { RESTAURANTS } from '@/data/restaurants';
@@ -43,8 +42,7 @@ export default function SightDetailScreen() {
 
     const sight = (SIGHTS.map(s => ({ ...s, category: 'sights' as const })).find(s => s.id === id) ||
         MUSEUMS.map(m => ({ ...m, category: 'museums' as const })).find(m => m.id === id) ||
-        RESTAURANTS.map(r => ({ ...r, category: 'restaurants' as const })).find(r => r.id === id) ||
-        ACTIVITIES.map(a => ({ ...a, category: 'activities' as const })).find(a => a.id === id)) as Sight | undefined;
+        RESTAURANTS.map(r => ({ ...r, category: 'restaurants' as const })).find(r => r.id === id)) as Sight | undefined;
 
     const { isFavorite, toggleFavorite } = useFavorites();
     const [isFav, setIsFav] = useState(false);

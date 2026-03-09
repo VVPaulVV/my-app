@@ -1,35 +1,36 @@
 import { WeatherWidget } from '@/components/WeatherWidget';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
-import { ACTIVITIES } from '@/data/activities';
-import { CATEGORIES } from '@/data/categories';
-import { MUSEUMS } from '@/data/museums';
-import { RESTAURANTS } from '@/data/restaurants';
+
+import { BATORAMA_DATA } from '@/data/batorama';
+import { EMERGENCY_DATA, EmergencyInfo } from '@/data/emergency';
 import { SIGHTS } from '@/data/sights';
-import { Tip, TIPS } from '@/data/tips';
+
+
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useFavorites } from '@/hooks/use-favorites';
+
 import i18n, { SUPPORTED_LANGUAGES, tData } from '@/i18n';
-import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Dimensions, FlatList, Image, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { GuideContent } from './GuideContent';
+
 import Animated, { Easing, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 
-const ExpandedTipOverlay = React.memo(({ tip, onClose }: { tip: Tip | null, onClose: () => void }) => {
+const EmergencyModal = React.memo(({ info, onClose }: { info: EmergencyInfo | null, onClose: () => void }) => {
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'light'];
     const transition = useSharedValue(0);
     const [visible, setVisible] = useState(false);
-    const [activeTip, setActiveTip] = useState<Tip | null>(null);
+    const [activeInfo, setActiveInfo] = useState<EmergencyInfo | null>(null);
 
     useEffect(() => {
-        if (tip) {
-            setActiveTip(tip);
+        if (info) {
+            setActiveInfo(info);
             setVisible(true);
             transition.value = withTiming(1, {
                 duration: 350,
@@ -42,11 +43,11 @@ const ExpandedTipOverlay = React.memo(({ tip, onClose }: { tip: Tip | null, onCl
             }, (finished) => {
                 if (finished) {
                     runOnJS(setVisible)(false);
-                    runOnJS(setActiveTip)(null);
+                    runOnJS(setActiveInfo)(null);
                 }
             });
         }
-    }, [tip]);
+    }, [info]);
 
     const backdropStyle = useAnimatedStyle(() => ({
         opacity: transition.value,
@@ -60,11 +61,11 @@ const ExpandedTipOverlay = React.memo(({ tip, onClose }: { tip: Tip | null, onCl
         ],
     }));
 
-    if (!visible || !activeTip) return null;
+    if (!visible || !activeInfo) return null;
 
     return (
         <Animated.View
-            pointerEvents={tip ? 'auto' : 'none'}
+            pointerEvents={info ? 'auto' : 'none'}
             style={[StyleSheet.absoluteFill, { zIndex: 1000 }]}
         >
             <View style={styles.expandedTipOverlay}>
@@ -75,12 +76,12 @@ const ExpandedTipOverlay = React.memo(({ tip, onClose }: { tip: Tip | null, onCl
                 <Animated.View
                     style={[
                         styles.expandedTipCard,
-                        { backgroundColor: theme.cardBackground },
+                        { backgroundColor: theme.cardBackground, maxHeight: '75%' },
                         cardStyle
                     ]}
                 >
-                    <View style={[styles.expandedTipIconContainer, { backgroundColor: activeTip.color }]}>
-                        <IconSymbol name={activeTip.icon as any} size={32} color="#2D2A26" />
+                    <View style={[styles.expandedTipIconContainer, { backgroundColor: activeInfo.color }]}>
+                        <IconSymbol name={activeInfo.icon as any} size={32} color="white" />
                     </View>
 
                     <TouchableOpacity style={styles.closeExpandedTip} onPress={onClose}>
@@ -88,19 +89,46 @@ const ExpandedTipOverlay = React.memo(({ tip, onClose }: { tip: Tip | null, onCl
                     </TouchableOpacity>
 
                     <Text style={[styles.expandedTipTitle, { color: theme.text }]}>
-                        {tData(activeTip, 'title')}
+                        {tData(activeInfo, 'title')}
+                    </Text>
+
+                    <Text style={[styles.expandedTipContent, { color: theme.textSecondary, fontSize: 15, marginBottom: 20 }]}>
+                        {tData(activeInfo, 'description')}
                     </Text>
 
                     <ScrollView showsVerticalScrollIndicator={false}>
-                        <Text style={[styles.expandedTipContent, { color: theme.textSecondary }]}>
-                            {tData(activeTip, 'content')}
-                        </Text>
+                        {tData(activeInfo, 'content').map((item: any, index: number) => (
+                            <TouchableOpacity
+                                key={index}
+                                style={[styles.emergencyItem, { borderBottomColor: theme.border }]}
+                                onPress={() => {
+                                    if (item.action) {
+                                        Linking.openURL(item.action);
+                                    }
+                                }}
+                                disabled={!item.action}
+                            >
+                                <View style={styles.emergencyItemLeft}>
+                                    <Text style={[styles.emergencyLabel, { color: theme.textSecondary }]}>{item.label}</Text>
+                                    <Text style={[styles.emergencyValue, { color: theme.text }]}>{item.value}</Text>
+                                </View>
+                                {item.action && (
+                                    <View style={[styles.emergencyActionIcon, { backgroundColor: activeInfo.color + '20' }]}>
+                                        <IconSymbol
+                                            name={item.action.startsWith('tel:') ? "phone.fill" : (item.action.startsWith('http') ? "globe" : "arrow.up.right")}
+                                            size={16}
+                                            color={activeInfo.color}
+                                        />
+                                    </View>
+                                )}
+                            </TouchableOpacity>
+                        ))}
                     </ScrollView>
 
                     <View style={[styles.expandedTipFooter, { borderTopColor: theme.border }]}>
-                        <IconSymbol name="sparkles" size={16} color={theme.primary} />
+                        <IconSymbol name="info.circle.fill" size={16} color={theme.primary} />
                         <Text style={[styles.footerText, { color: theme.textSecondary }]}>
-                            {i18n.t('didYouKnow') || 'Did you know?'}
+                            {i18n.t('necessaryInfo') || 'Necessary Information'}
                         </Text>
                     </View>
                 </Animated.View>
@@ -109,77 +137,35 @@ const ExpandedTipOverlay = React.memo(({ tip, onClose }: { tip: Tip | null, onCl
     );
 });
 
+
+
+
+
+
 export function HomeContent({ onNavigate, onLanguageChange }: { onNavigate: (path: string, cat?: string) => void, onLanguageChange?: (lang: string) => void }) {
     const router = useRouter();
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'light'];
-    const { favorites } = useFavorites();
-    const insets = useSafeAreaInsets();
 
-    const favoriteSights = [...SIGHTS, ...MUSEUMS, ...RESTAURANTS, ...ACTIVITIES]
-        .filter(item => favorites.includes(item.id));
+    const insets = useSafeAreaInsets();
 
     const featuredSight = SIGHTS.find(s => s.id === 'cathedral');
 
-    const ExploreSection = ({ title, data, categoryId }: { title: string, data: any[], categoryId: string }) => {
-        const { isFavorite, toggleFavorite } = useFavorites();
-
-        return (
-            <View style={styles.sectionContainer}>
-                <View style={styles.sectionHeader}>
-                    <Text style={[styles.sectionTitle, { color: theme.text }]}>{title}</Text>
-                    <TouchableOpacity onPress={() => onNavigate('/explore', categoryId)}>
-                        <Text style={{ color: theme.primary, fontWeight: '600' }}>{i18n.t('seeAll')}</Text>
-                    </TouchableOpacity>
-                </View>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
-                    {data.map((item) => (
-                        <TouchableOpacity
-                            key={item.id}
-                            style={[styles.horizontalCard, { backgroundColor: theme.cardBackground, borderColor: theme.border }]}
-                            onPress={() => router.push(`/sight/${item.id}` as any)}
-                        >
-                            <Image source={item.image} style={styles.cardImage} />
-
-                            <Pressable
-                                style={styles.favoriteBadgeSmall}
-                                onPress={(e) => {
-                                    e.stopPropagation();
-                                    toggleFavorite(item.id);
-                                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                }}
-                            >
-                                <IconSymbol
-                                    name={isFavorite(item.id) ? "heart.fill" : "heart"}
-                                    size={14}
-                                    color={isFavorite(item.id) ? "#FF4B4B" : "#FFF"}
-                                />
-                            </Pressable>
-
-                            <View style={styles.cardContent}>
-                                <Text style={[styles.cardTitle, { color: theme.text }]} numberOfLines={1}>{tData(item, 'name')}</Text>
-                                <View style={styles.cardMeta}>
-                                    <IconSymbol name="mappin.and.ellipse" size={12} color={theme.primary} />
-                                    <Text style={[styles.cardLocation, { color: theme.textSecondary }]} numberOfLines={1}>{tData(item, 'location')}</Text>
-                                </View>
-                            </View>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
-            </View>
-        );
-    };
 
     const [languageModalVisible, setLanguageModalVisible] = useState(false);
+    const [isGuideVisible, setIsGuideVisible] = useState(false);
     const [currentLanguage, setCurrentLanguage] = useState(i18n.locale);
-    const [selectedTip, setSelectedTip] = useState<Tip | null>(null);
+    const [selectedEmergency, setSelectedEmergency] = useState<EmergencyInfo | null>(null);
 
-    const handleOpenTip = (tip: Tip) => {
-        setSelectedTip(tip);
+
+
+
+    const handleOpenEmergency = (info: EmergencyInfo) => {
+        setSelectedEmergency(info);
     };
 
-    const handleCloseTip = () => {
-        setSelectedTip(null);
+    const handleCloseEmergency = () => {
+        setSelectedEmergency(null);
     };
 
     const handleLanguageSelect = async (langCode: string) => {
@@ -189,12 +175,7 @@ export function HomeContent({ onNavigate, onLanguageChange }: { onNavigate: (pat
         if (onLanguageChange) onLanguageChange(langCode);
     };
 
-    const exploreCategories = [
-        { id: 'sights', name: i18n.t('sights'), icon: 'camera.fill', color: CATEGORIES.find(c => c.id === 'sights')?.color || '#FFB3B3', route: '/explore?category=sights' },
-        { id: 'restaurants', name: i18n.t('restaurants'), icon: 'fork.knife', color: CATEGORIES.find(c => c.id === 'restaurants')?.color || '#FFE082', route: '/explore?category=restaurants' },
-        { id: 'museums', name: i18n.t('museums'), icon: 'building.columns.fill', color: CATEGORIES.find(c => c.id === 'museums')?.color || '#E1BEE7', route: '/explore?category=museums' },
-        { id: 'activities', name: i18n.t('activities'), icon: 'sparkles', color: CATEGORIES.find(c => c.id === 'activities')?.color || '#B3E5FC', route: '/explore?category=activities' },
-    ];
+
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
@@ -237,51 +218,87 @@ export function HomeContent({ onNavigate, onLanguageChange }: { onNavigate: (pat
 
                 { }
                 <View style={[styles.sectionHeader, { marginTop: 10 }]}>
-                    <Text style={[styles.sectionTitle, { color: theme.text }]}>{i18n.t('dailyTips')}</Text>
+                    <Text style={[styles.sectionTitle, { color: theme.text }]}>{i18n.t('necessaryInfo')}</Text>
                 </View>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tipsScroll}>
-                    {TIPS.map((tip) => (
-                        <TouchableOpacity
-                            key={tip.id}
-                            activeOpacity={0.8}
-                            onPress={() => {
-                                handleOpenTip(tip);
-                            }}
-                            style={[styles.tipCard, { backgroundColor: tip.color + '40', borderColor: tip.color }]}
-                        >
-                            <View style={[styles.tipIconContainer, { backgroundColor: tip.color }]}>
-                                <IconSymbol name={tip.icon as any} size={24} color="#2D2A26" />
-                            </View>
-                            <Text style={[styles.tipTitle, { color: theme.text }]}>{tData(tip, 'title')}</Text>
-                            <Text style={[styles.tipContent, { color: theme.textSecondary }]} numberOfLines={3}>
-                                {tData(tip, 'content')}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
+                <View style={styles.necessaryLayout}>
+                    <View style={styles.emergencyColumn}>
+                        {EMERGENCY_DATA.map((info) => (
+                            <TouchableOpacity
+                                key={info.id}
+                                activeOpacity={0.8}
+                                onPress={() => handleOpenEmergency(info)}
+                                style={[
+                                    styles.emergencyCardSmall,
+                                    {
+                                        backgroundColor: theme.cardBackground,
+                                        borderColor: theme.border,
+                                        shadowColor: info.color
+                                    }
+                                ]}
+                            >
+                                <View style={[styles.emergencyIconContainerSmall, { backgroundColor: info.color + '15' }]}>
+                                    <IconSymbol name={info.icon as any} size={22} color={info.color} />
+                                </View>
+                                <View style={styles.emergencyCardContent}>
+                                    <Text style={[styles.emergencyCardTitleSmall, { color: theme.text }]} numberOfLines={1}>
+                                        {tData(info, 'title')}
+                                    </Text>
+                                </View>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
 
-                { }
-                {favoriteSights.length > 0 && (
-                    <ExploreSection title={i18n.t('favorites') || 'Favorites'} data={favoriteSights} categoryId="favorites" />
-                )}
-                { }
+                    <TouchableOpacity
+                        activeOpacity={0.8}
+                        onPress={() => setIsGuideVisible(true)}
+                        style={[
+                            styles.guideCard,
+                            {
+                                backgroundColor: theme.cardBackground,
+                                borderColor: theme.border,
+                                shadowColor: '#FF9800'
+                            }
+                        ]}
+                    >
+                        <View style={[styles.guideIconContainer, { backgroundColor: '#FF980015' }]}>
+                            <IconSymbol name="book.fill" size={32} color="#FF9800" />
+                        </View>
+                        <Text style={[styles.guideCardTitle, { color: theme.text }]}>
+                            {i18n.t('guideTitle') || 'Ticket Guide'}
+                        </Text>
+                        <Text style={[styles.guideCardDesc, { color: theme.textSecondary }]} numberOfLines={2}>
+                            {i18n.t('howToBuy') || 'How to buy & validate'}
+                        </Text>
+                        <View style={styles.guideCardFooter}>
+                            <Text style={{ color: theme.primary, fontWeight: '700', fontSize: 12 }}>{i18n.t('seeAll')}</Text>
+                            <IconSymbol name="chevron.right" size={14} color={theme.primary} />
+                        </View>
+                    </TouchableOpacity>
+                </View>
+
                 <View style={styles.sectionHeader}>
-                    <Text style={[styles.sectionTitle, { color: theme.text }]}>{i18n.t('exploreTitle')}</Text>
+                    <Text style={[styles.sectionTitle, { color: theme.text }]}>{i18n.t('popularActivity') || 'Popular Activity'}</Text>
                 </View>
-                <View style={styles.exploreGrid}>
-                    {exploreCategories.map((cat) => (
-                        <TouchableOpacity
-                            key={cat.id}
-                            style={[styles.exploreButton, { backgroundColor: theme.cardBackground, borderColor: theme.border }]}
-                            onPress={() => onNavigate('/explore', cat.id)}
-                        >
-                            <View style={[styles.exploreIcon, { backgroundColor: cat.color + '40' }]}>
-                                <IconSymbol name={cat.icon as any} size={22} color="#2D2A26" />
-                            </View>
-                            <Text style={[styles.exploreLabel, { color: theme.text }]}>{i18n.t(cat.id) || cat.name}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
+
+                {BATORAMA_DATA && (
+                    <TouchableOpacity
+                        activeOpacity={0.9}
+                        style={styles.heroCard}
+                        onPress={() => onNavigate('/batorama')}
+                    >
+                        <Image source={BATORAMA_DATA.image} style={styles.heroImage} />
+
+                        <View style={styles.heroOverlay}>
+
+                            <Text style={styles.heroTitle}>{tData(BATORAMA_DATA, 'name')}</Text>
+                            <Text style={styles.heroSubtitle}>
+                                {((BATORAMA_DATA.translations as any)[i18n.locale] || BATORAMA_DATA.translations.en).tagline}
+                            </Text>
+                        </View>
+                    </TouchableOpacity>
+                )}
+
+
 
                 { }
                 <View style={styles.sectionHeader}>
@@ -290,32 +307,22 @@ export function HomeContent({ onNavigate, onLanguageChange }: { onNavigate: (pat
                 <View style={styles.quickActionsGrid}>
                     <TouchableOpacity
                         style={[styles.actionButton, { backgroundColor: theme.cardBackground, borderColor: theme.border }]}
+                        onPress={() => onNavigate('/explore', 'map')}
+                    >
+                        <View style={[styles.actionIcon, { backgroundColor: '#F3E5F5' }]}>
+                            <IconSymbol name="map.fill" size={24} color="#7B1FA2" />
+                        </View>
+                        <Text style={[styles.actionLabel, { color: theme.text }]}>{i18n.t('map') || 'Map'}</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.actionButton, { backgroundColor: theme.cardBackground, borderColor: theme.border }]}
                         onPress={() => onNavigate('/transport')}
                     >
                         <View style={[styles.actionIcon, { backgroundColor: '#E0F2F1' }]}>
                             <IconSymbol name="tram.fill" size={24} color="#00796B" />
                         </View>
                         <Text style={[styles.actionLabel, { color: theme.text }]}>{i18n.t('transport')}</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={[styles.actionButton, { backgroundColor: theme.cardBackground, borderColor: theme.border }]}
-                        onPress={() => Linking.openURL('tel:+33388150100')}
-                    >
-                        <View style={[styles.actionIcon, { backgroundColor: '#FFF3E0' }]}>
-                            <IconSymbol name="phone.fill" size={24} color="#EF6C00" />
-                        </View>
-                        <Text style={[styles.actionLabel, { color: theme.text }]}>{i18n.t('emergency') || 'Emergency'}</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={[styles.actionButton, { backgroundColor: theme.cardBackground, borderColor: theme.border }]}
-                        onPress={() => onNavigate('/explore')}
-                    >
-                        <View style={[styles.actionIcon, { backgroundColor: '#F3E5F5' }]}>
-                            <IconSymbol name="map.fill" size={24} color="#7B1FA2" />
-                        </View>
-                        <Text style={[styles.actionLabel, { color: theme.text }]}>{i18n.t('map') || 'Map'}</Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>
@@ -374,8 +381,23 @@ export function HomeContent({ onNavigate, onLanguageChange }: { onNavigate: (pat
             </Modal>
 
             { }
-            <ExpandedTipOverlay tip={selectedTip} onClose={handleCloseTip} />
+            <EmergencyModal info={selectedEmergency} onClose={handleCloseEmergency} />
+
+            <Modal
+                visible={isGuideVisible}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => setIsGuideVisible(false)}
+            >
+                <View style={styles.guideModalBackdrop}>
+                    <Pressable style={StyleSheet.absoluteFill} onPress={() => setIsGuideVisible(false)} />
+                    <View style={styles.guideModalContent}>
+                        <GuideContent onClose={() => setIsGuideVisible(false)} />
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
+
     );
 }
 
@@ -478,38 +500,8 @@ const styles = StyleSheet.create({
         fontSize: 22,
         fontWeight: '700',
     },
-    horizontalScroll: {
-        paddingRight: 20,
-    },
-    horizontalCard: {
-        width: 200,
-        borderRadius: 20,
-        borderWidth: 1,
-        marginRight: 16,
-        overflow: 'hidden',
-    },
-    cardImage: {
-        width: '100%',
-        height: 120,
-    },
-    cardContent: {
-        padding: 12,
-    },
-    cardTitle: {
-        fontSize: 15,
-        fontWeight: '700',
-        marginBottom: 4,
-    },
-    cardMeta: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    cardLocation: {
-        fontSize: 11,
-        marginLeft: 4,
-        fontWeight: '500',
-    },
     modalOverlay: {
+
         flex: 1,
         justifyContent: 'center',
         padding: 20
@@ -567,11 +559,11 @@ const styles = StyleSheet.create({
     },
     quickActionsGrid: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        gap: 12,
         marginBottom: 30,
     },
     actionButton: {
-        width: (SCREEN_WIDTH - 64) / 3,
+        width: (SCREEN_WIDTH - 52) / 2,
         padding: 16,
         borderRadius: 20,
         borderWidth: 1,
@@ -691,5 +683,127 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         textTransform: 'uppercase',
         letterSpacing: 1,
+    },
+    emergencyContainer: {
+        marginBottom: 30,
+        gap: 12,
+    },
+    necessaryLayout: {
+        flexDirection: 'row',
+        marginBottom: 30,
+        gap: 12,
+    },
+    websiteButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 10,
+        marginBottom: 20,
+    },
+
+    emergencyColumn: {
+        flex: 1,
+        gap: 12,
+    },
+    emergencyCardSmall: {
+        flex: 1,
+        height: 64,
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 12,
+        borderRadius: 20,
+        borderWidth: 1,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    emergencyIconContainerSmall: {
+        width: 40,
+        height: 40,
+        borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 10,
+    },
+    emergencyCardTitleSmall: {
+        fontSize: 14,
+        fontWeight: '700',
+    },
+    emergencyCardContent: {
+        flex: 1,
+    },
+    guideCard: {
+
+        flex: 1,
+        padding: 20,
+        borderRadius: 24,
+        borderWidth: 1,
+        justifyContent: 'space-between',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 3,
+    },
+    guideIconContainer: {
+        width: 56,
+        height: 56,
+        borderRadius: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 12,
+    },
+    guideCardTitle: {
+        fontSize: 18,
+        fontWeight: '800',
+        marginBottom: 4,
+    },
+    guideCardDesc: {
+        fontSize: 12,
+        lineHeight: 16,
+        fontWeight: '500',
+        marginBottom: 12,
+    },
+    guideCardFooter: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    guideModalBackdrop: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+    },
+    guideModalContent: {
+        height: '85%',
+        width: '100%',
+    },
+    emergencyItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 16,
+        borderBottomWidth: 1,
+    },
+    emergencyItemLeft: {
+        flex: 1,
+    },
+    emergencyLabel: {
+        fontSize: 12,
+        fontWeight: '600',
+        textTransform: 'uppercase',
+        marginBottom: 4,
+    },
+    emergencyValue: {
+        fontSize: 17,
+        fontWeight: '700',
+    },
+    emergencyActionIcon: {
+        width: 36,
+        height: 36,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
     }
 });
+
+

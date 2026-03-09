@@ -22,7 +22,6 @@ import { useFavorites } from '@/hooks/use-favorites';
 import i18n, { tData } from '@/i18n';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ACTIVITIES } from '@/data/activities';
 import { CATEGORIES } from '@/data/categories';
 import { MUSEUMS } from '@/data/museums';
 import { RESTAURANTS } from '@/data/restaurants';
@@ -34,7 +33,7 @@ const ROW_HEIGHT = 104;
 const LIST_MARGIN = 5;
 
 const ALL_ITEMS_MAP = new Map<string, any>();
-[...SIGHTS, ...MUSEUMS, ...RESTAURANTS, ...ACTIVITIES].forEach(item => {
+[...SIGHTS, ...MUSEUMS, ...RESTAURANTS].forEach(item => {
     ALL_ITEMS_MAP.set(item.id, item);
 });
 

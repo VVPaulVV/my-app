@@ -29,11 +29,13 @@ import Animated, {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // --- Assets/Data assumed from your imports ---
-import { ACTIVITIES } from '@/data/activities';
+import { BATORAMA_DATA } from '@/data/batorama';
+import { BATORAMA_LOCATIONS } from '@/data/batorama_locations';
 import { CATEGORIES } from '@/data/categories';
 import { MUSEUMS } from '@/data/museums';
 import { RESTAURANTS } from '@/data/restaurants';
 import { SIGHTS } from '@/data/sights';
+
 import { TRANSPORT_LINES } from '@/data/transport_data_generated';
 import { TRANSPORT_STOPS } from '@/data/transport_stops';
 import { ParkingData, useParkingData } from '@/hooks/useParkingData';
@@ -48,23 +50,34 @@ const CLOSED_STOP_NAMES = ["Langstross/Grand Rue", "Broglie", "Alt Winmärik-Vie
 const MAPBOX_ACCESS_TOKEN = 'pk.eyJ1Ijoic3BlY3RydWgiLCJhIjoiY21rNG5sNmh3MDF6NjNkczl5cGM3Ynl2aSJ9.U3vf9ao95WB7Xxx4n2Ihug';
 const ROUTE_COLORS = ['#FF4B4B', '#4B7BFF', '#4BFF4B', '#FFD700', '#FF00FF', '#00FFFF', '#FF8C00', '#8A2BE2'];
 
-const getCategoryColor = (type: string) => CATEGORIES.find(c => c.nameKey === type)?.color || '#888';
+const getCategoryColor = (type: string) => {
+    if (type === 'batorama') return '#3498db';
+    return CATEGORIES.find(c => c.nameKey === type)?.color || '#888';
+};
+
 const getCategoryIcon = (type: string) => {
     switch (type) {
         case 'sights': return 'star.fill';
         case 'restaurants': return 'fork.knife';
         case 'museums': return 'building.columns.fill';
-        case 'activities': return 'figure.walk';
+        case 'batorama': return 'ferry.fill';
+
         default: return 'map.fill';
     }
 };
+
 
 // --- Sub-Component: POI Marker ---
 const PoiMarker = React.memo(({ item, nearestStop, onPress, isSelected, theme }: any) => {
     const scaleAnim = useRef(new RNAnimated.Value(1)).current;
     useEffect(() => {
-        RNAnimated.spring(scaleAnim, { toValue: isSelected ? 1.2 : 1, friction: 5, tension: 40, useNativeDriver: true }).start();
-    }, [isSelected]);
+        RNAnimated.spring(scaleAnim, {
+            toValue: (isSelected && item.type !== 'batorama') ? 1.2 : 1,
+            friction: 5,
+            tension: 40,
+            useNativeDriver: true
+        }).start();
+    }, [isSelected, item.type]);
 
     return (
         <Mapbox.PointAnnotation
@@ -72,10 +85,34 @@ const PoiMarker = React.memo(({ item, nearestStop, onPress, isSelected, theme }:
             coordinate={[item.coordinates.longitude, item.coordinates.latitude]}
             onSelected={() => onPress(item)}
         >
-            <RNAnimated.View style={{ alignItems: 'center', justifyContent: 'center', padding: 16, transform: [{ scale: scaleAnim }], zIndex: isSelected ? 999 : 10 }}>
-                <View style={[styles.poiMarkerBody, { backgroundColor: getCategoryColor(item.type) }]}>
-                    <IconSymbol name={getCategoryIcon(item.type)} size={14} color="#FFF" />
-                </View>
+            <RNAnimated.View
+                collapsable={false}
+                style={{
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 10,
+                    transform: [{ scale: scaleAnim }],
+                    zIndex: isSelected ? 999 : 10
+                }}
+            >
+                {item.type === 'batorama' ? (
+                    <View collapsable={false} style={styles.batoramaMarker}>
+                        <Image
+                            source={require('@/assets/images/icons/batorama-pin.png')}
+                            style={{ width: 18, height: 18 }}
+                            resizeMode="contain"
+                        />
+                    </View>
+                ) : (
+
+                    <View style={[
+                        styles.poiMarkerBody,
+                        { backgroundColor: getCategoryColor(item.type) }
+                    ]}>
+                        <IconSymbol name={getCategoryIcon(item.type)} size={14} color="#FFF" />
+                    </View>
+                )}
+
                 {nearestStop?.lines && (
                     <View style={styles.poiBadgeContainer}>
                         {(() => {
@@ -97,6 +134,7 @@ const PoiMarker = React.memo(({ item, nearestStop, onPress, isSelected, theme }:
         </Mapbox.PointAnnotation>
     );
 });
+
 
 const ParkingMapMarker = ({ item, isFocused, onSelect, theme }: { item: ParkingData, isFocused: boolean, onSelect: () => void, theme: any }) => {
     const scaleAnim = useRef(new RNAnimated.Value(1)).current;
@@ -129,7 +167,8 @@ const ParkingMapMarker = ({ item, isFocused, onSelect, theme }: { item: ParkingD
 };
 
 // --- Main Extracted Map Component ---
-export const MapContent = ({ theme, onClose, router, isFocused, favorites = [], focusId }: any) => {
+export const MapContent = ({ theme, onNavigate, onClose, router, isFocused, favorites = [], focusId }: any) => {
+
     const mapCamera = useRef<Mapbox.Camera>(null);
     const [search, setSearch] = useState('');
     const [mapFilter, setMapFilter] = useState('all');
@@ -141,12 +180,26 @@ export const MapContent = ({ theme, onClose, router, isFocused, favorites = [], 
             ...(SIGHTS as any[]).map(i => ({ ...i, type: 'sights' })),
             ...(RESTAURANTS as any[]).map(i => ({ ...i, type: 'restaurants' })),
             ...(MUSEUMS as any[]).map(i => ({ ...i, type: 'museums' })),
-            ...(ACTIVITIES as any[]).map(i => ({ ...i, type: 'activities' }))
+            ...BATORAMA_LOCATIONS.map(i => ({ ...i, type: 'batorama', image: BATORAMA_DATA.image }))
         ];
+
     }, []);
 
     // Selection State
     const [selectedPoi, setSelectedPoi] = useState<any | null>(null);
+
+    const handlePoiPress = useCallback((poi: any) => {
+        setSelectedPoi(poi);
+        if (poi.coordinates) {
+            mapCamera.current?.setCamera({
+                centerCoordinate: [poi.coordinates.longitude, poi.coordinates.latitude],
+                zoomLevel: 15,
+                animationDuration: 1000,
+            });
+        }
+    }, []);
+
+
     const [selectedStop, setSelectedStop] = useState<any | null>(null);
     const [selectedLineId, setSelectedLineId] = useState<string | null>(null);
     const [selectedParking, setSelectedParking] = useState<ParkingData | null>(null);
@@ -154,7 +207,10 @@ export const MapContent = ({ theme, onClose, router, isFocused, favorites = [], 
     // Map State
     const [isLayersVisible, setIsLayersVisible] = useState(false);
     const [isSeasonalMode, setIsSeasonalMode] = useState(false);
-    const [isLayersValues, setIsLayersValues] = useState({ landmarks: false, mainLines: true, parking: false });
+    const [isLayersValues, setIsLayersValues] = useState({ landmarks: false, mainLines: true, parking: false, batorama: true });
+
+
+
 
     // Data State
     const [allArrivals, setAllArrivals] = useState<VehicleJourney[]>([]);
@@ -475,14 +531,38 @@ export const MapContent = ({ theme, onClose, router, isFocused, favorites = [], 
             const shortName = selectedLineId.replace('TRAM_', '').replace('BUS_', '');
             features = features.filter((f: any) => f.properties.lines?.includes(shortName));
         }
+
+        if (isLayersValues.batorama) {
+            const batoramaFeatures = BATORAMA_LOCATIONS.map(loc => ({
+                type: 'Feature',
+                id: loc.id,
+                properties: {
+                    name: loc.name,
+                    lines: ['Batorama'],
+                    uniqueId: `BATORAMA_${loc.id}`,
+                    isBatorama: true,
+                },
+                geometry: {
+                    type: 'Point',
+                    coordinates: [loc.coordinates.longitude, loc.coordinates.latitude]
+                }
+            }));
+            features = [...features, ...batoramaFeatures];
+        }
+
         return { type: 'FeatureCollection', features };
-    }, [selectedLineId]);
+    }, [selectedLineId, isLayersValues.batorama]);
 
     const poiFeatures = useMemo(() => {
-        if (!isLayersValues.landmarks) return [];
         return allPoiItems.filter((item: any) => {
+            if (item.type === 'batorama') return false; // Now handled as stops
+            if (!isLayersValues.landmarks) return false;
+
+
             if (!item.coordinates || typeof item.coordinates.latitude !== 'number' || typeof item.coordinates.longitude !== 'number') return false;
-            if (mapFilter !== 'all' && item.type !== mapFilter) return false;
+            if (item.type !== 'batorama' && mapFilter !== 'all' && item.type !== mapFilter) return false;
+
+
             if (search && !tData(item, 'name').toLowerCase().includes(search.toLowerCase())) return false;
             return true;
         }).map((item: any) => {
@@ -494,7 +574,8 @@ export const MapContent = ({ theme, onClose, router, isFocused, favorites = [], 
             }
             return { ...item, nearestStop: nearest };
         });
-    }, [isLayersValues.landmarks, mapFilter, search]);
+    }, [isLayersValues.landmarks, isLayersValues.batorama, mapFilter, search]);
+
 
     // --- UI Logic Hooks ---
     const handleClose = () => {
@@ -514,6 +595,7 @@ export const MapContent = ({ theme, onClose, router, isFocused, favorites = [], 
                     setWalkRadiusGeoJSON(null);
                 }}
             >
+                <Mapbox.Images images={{ 'batorama-logo': require('../../assets/images/icons/batorama-logo.png') }} />
                 <Mapbox.UserLocation
                     visible={true}
                     androidRenderMode="gps"
@@ -595,7 +677,20 @@ export const MapContent = ({ theme, onClose, router, isFocused, favorites = [], 
                         const feat = e.features[0];
                         if (feat.geometry?.type === 'Point') {
                             const coords = (feat.geometry as any).coordinates;
-                            setSelectedStop({ ...feat.properties, coordinates: coords });
+                            const props = feat.properties;
+
+                            if (props?.isBatorama) {
+                                const loc = BATORAMA_LOCATIONS.find(l => l.id === feat.id);
+                                if (loc) {
+                                    setSelectedPoi({ ...loc, type: 'batorama', image: BATORAMA_DATA.image });
+                                    setSelectedStop({ ...props, coordinates: coords });
+                                    setSelectedParking(null);
+                                }
+                            } else if (props) {
+                                setSelectedStop({ ...props, coordinates: coords });
+                                setSelectedPoi(null);
+                                setSelectedParking(null);
+                            }
                         }
                     }}
                     hitbox={{ width: 20, height: 20 }}
@@ -603,7 +698,10 @@ export const MapContent = ({ theme, onClose, router, isFocused, favorites = [], 
                     <Mapbox.CircleLayer
                         id="stopsLayer"
                         minZoomLevel={12}
-                        filter={isSeasonalMode ? ['!', ['in', ['get', 'name'], ['literal', CLOSED_STOP_NAMES]]] : ['!=', '1', '2']}
+                        filter={isSeasonalMode
+                            ? ['all', ['!', ['in', ['get', 'name'], ['literal', CLOSED_STOP_NAMES]]], ['!', ['to-boolean', ['get', 'isBatorama']]]]
+                            : ['!', ['to-boolean', ['get', 'isBatorama']]]
+                        }
                         style={{
                             circleRadius: ['interpolate', ['linear'], ['zoom'], 12, 3, 16, 6],
                             circleColor: '#FFFFFF',
@@ -615,12 +713,25 @@ export const MapContent = ({ theme, onClose, router, isFocused, favorites = [], 
                         id="stops-selected"
                         minZoomLevel={12}
                         aboveLayerID="stopsLayer"
-                        filter={['==', ['get', 'uniqueId'], selectedStop?.uniqueId || '']}
+                        filter={['all',
+                            ['==', ['get', 'uniqueId'], selectedStop?.uniqueId || ''],
+                            ['!', ['to-boolean', ['get', 'isBatorama']]]
+                        ]}
                         style={{
                             circleRadius: ['interpolate', ['linear'], ['zoom'], 12, 8, 16, 12],
                             circleColor: '#FFFFFF',
                             circleStrokeColor: '#000000',
                             circleStrokeWidth: 3,
+                        }}
+                    />
+                    <Mapbox.SymbolLayer
+                        id="batorama-stops"
+                        minZoomLevel={12}
+                        filter={['==', ['get', 'isBatorama'], true]}
+                        style={{
+                            iconImage: 'batorama-logo',
+                            iconSize: ['interpolate', ['linear'], ['zoom'], 12, 0.18, 16, 0.35],
+                            iconAllowOverlap: true,
                         }}
                     />
                     <Mapbox.SymbolLayer
@@ -654,8 +765,9 @@ export const MapContent = ({ theme, onClose, router, isFocused, favorites = [], 
 
                 {/* POIs */}
                 {poiFeatures.map((item: any) => (
-                    <PoiMarker key={item.id} item={item} nearestStop={item.nearestStop} isSelected={selectedPoi?.id === item.id} theme={theme} onPress={setSelectedPoi} />
+                    <PoiMarker key={item.id} item={item} nearestStop={item.nearestStop} isSelected={selectedPoi?.id === item.id} theme={theme} onPress={handlePoiPress} />
                 ))}
+
 
                 {/* Parking Markers */}
                 {isLayersValues.parking && parkingData.map((item) => (
@@ -696,13 +808,26 @@ export const MapContent = ({ theme, onClose, router, isFocused, favorites = [], 
                         </TouchableOpacity>
                     );
                 })}
+
+                <View style={{ height: 1, backgroundColor: theme.border, marginVertical: 4, width: '80%', alignSelf: 'center' }} />
+
+                <TouchableOpacity
+                    onPress={() => setIsLayersValues(v => ({ ...v, batorama: !v.batorama }))}
+                    style={[styles.legendItem, {
+                        backgroundColor: isLayersValues.batorama ? '#3498db' : theme.cardBackground,
+                        borderColor: '#3498db',
+                        borderWidth: isLayersValues.batorama ? 0 : 2
+                    }]}>
+                    <IconSymbol name="ferry.fill" size={20} color={isLayersValues.batorama ? '#FFF' : '#3498db'} />
+                </TouchableOpacity>
+
             </Animated.View>
 
             {/* 3. Bottom Category Filters */}
             {!selectedPoi && !selectedStop && !selectedParking && (
                 <View style={[styles.filterContainer, { bottom: 20 + insets.bottom }]}>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
-                        {['sights', 'restaurants', 'museums', 'activities'].map(f => {
+                        {['sights', 'restaurants', 'museums'].map(f => {
                             const isActive = mapFilter === f && isLayersValues.landmarks;
                             const category = CATEGORIES.find(c => c.nameKey === f);
                             const color = category?.color || theme.primary;
@@ -739,8 +864,17 @@ export const MapContent = ({ theme, onClose, router, isFocused, favorites = [], 
                     <TouchableOpacity
                         activeOpacity={0.9}
                         style={{ flexDirection: 'row', gap: 12, paddingBottom: 12 }}
-                        onPress={() => router.push(`/sight/${selectedPoi.id}` as any)}
+                        onPress={() => {
+                            if (selectedPoi.type === 'batorama') {
+                                onNavigate('/batorama');
+                                setSelectedPoi(null);
+                                setSelectedStop(null);
+                            } else {
+                                router.push(`/sight/${selectedPoi.id}` as any);
+                            }
+                        }}
                     >
+
                         {selectedPoi.image && (
                             <Image
                                 source={typeof selectedPoi.image === 'number' ? selectedPoi.image : { uri: selectedPoi.image }}
@@ -755,6 +889,7 @@ export const MapContent = ({ theme, onClose, router, isFocused, favorites = [], 
                                     onPress={(e) => {
                                         e.stopPropagation();
                                         setSelectedPoi(null);
+                                        setSelectedStop(null);
                                     }}
                                 >
                                     <IconSymbol name="xmark" size={14} color={theme.text} />
@@ -773,6 +908,8 @@ export const MapContent = ({ theme, onClose, router, isFocused, favorites = [], 
                                             e.stopPropagation();
                                             handleDirections(selectedPoi);
                                         }}
+
+
                                     >
                                         <IconSymbol name="location.fill" size={14} color={theme.primary} />
                                         <Text style={{ color: theme.text, fontSize: 12, fontWeight: '700', marginLeft: 4 }}>{i18n.t('go')}</Text>
@@ -790,7 +927,7 @@ export const MapContent = ({ theme, onClose, router, isFocused, favorites = [], 
             )}
 
             {/* 5. StopDetail Card */}
-            {selectedStop && (
+            {selectedStop && !selectedStop.isBatorama && (
                 <Animated.View entering={SlideInDown} exiting={FadeOutDown} style={[styles.detailCard, { backgroundColor: theme.cardBackground, zIndex: 1000, bottom: 30 + insets.bottom }]}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                         <Text style={[styles.detailTitle, { color: theme.text, flex: 1 }]}>{selectedStop.name}</Text>
@@ -925,10 +1062,15 @@ export const MapContent = ({ theme, onClose, router, isFocused, favorites = [], 
                                 <IconSymbol name={isLayersValues.parking ? "checkmark.circle.fill" : "circle"} size={22} color={theme.primary} />
                                 <Text style={[styles.layerText, { color: theme.text }]}>Parking</Text>
                             </TouchableOpacity>
+                            <TouchableOpacity style={styles.layerRow} onPress={() => setIsLayersValues(v => ({ ...v, batorama: !v.batorama }))}>
+                                <IconSymbol name={isLayersValues.batorama ? "checkmark.circle.fill" : "circle"} size={22} color={theme.primary} />
+                                <Text style={[styles.layerText, { color: theme.text }]}>Batorama Locations</Text>
+                            </TouchableOpacity>
                             <TouchableOpacity style={styles.layerRow} onPress={() => setIsSeasonalMode(!isSeasonalMode)}>
                                 <IconSymbol name={isSeasonalMode ? "checkmark.circle.fill" : "circle"} size={22} color={theme.primary} />
                                 <Text style={[styles.layerText, { color: theme.text }]}>Christmas Mode (Hide Closed Stops)</Text>
                             </TouchableOpacity>
+
                         </Animated.View>
                     </Pressable>
                 )
@@ -974,6 +1116,24 @@ const styles = StyleSheet.create({
     layerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
     layerText: { fontSize: 16, marginLeft: 12 },
     poiMarkerBody: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#FFF' },
+    batoramaMarker: {
+        width: 28,
+        height: 28,
+        backgroundColor: '#FFF',
+        borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 3,
+        elevation: 5,
+        borderWidth: 1.5,
+        borderColor: '#3498db',
+    },
+
+
+
     poiBadgeContainer: { position: 'absolute', top: 4, right: 0, flexDirection: 'row', gap: 2 },
     poiBadge: { paddingHorizontal: 3, borderRadius: 4, borderWidth: 1, borderColor: '#FFF' },
     poiBadgeText: { color: '#FFF', fontSize: 8, fontWeight: '800' },
