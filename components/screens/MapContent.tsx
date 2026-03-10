@@ -1,4 +1,3 @@
-import { GlassView } from '@/components/ui/GlassView';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { getCategoryColor } from '@/constants/categoryColors';
 import { Colors } from '@/constants/theme';
@@ -834,7 +833,7 @@ export const MapContent = ({ theme, onNavigate, onClose, router, isFocused, favo
             {/* 3. Bottom Category Filters (Map Legend) */}
             {!selectedPoi && !selectedStop && !selectedParking && (
                 <View style={[styles.filterContainer, { bottom: 20 + insets.bottom, alignItems: 'center' }]}>
-                    <GlassView style={styles.legendBlurView} blurAmount={30}>
+                    <View style={[styles.legendBlurView, { backgroundColor: `rgba(${Colors[colorScheme].cardBackground.match(/\w\w/g)?.map(x => parseInt(x, 16)).join(', ')}, 0.92)` }]}>
                         <View style={styles.legendInnerView}>
                             {['sights', 'restaurants', 'museums'].map((f, i) => {
                                 const isActive = mapFilter === f && isLayersValues.landmarks;
@@ -860,7 +859,7 @@ export const MapContent = ({ theme, onNavigate, onClose, router, isFocused, favo
                                 );
                             })}
                         </View>
-                    </GlassView>
+                    </View>
                 </View>
             )}
             {
