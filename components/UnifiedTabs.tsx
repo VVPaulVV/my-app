@@ -3,12 +3,13 @@ import { CATEGORIES } from '@/data/categories';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useFavorites } from '@/hooks/use-favorites';
 import i18n from '@/i18n';
-import { BlurView } from 'expo-blur';
 import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
+import { GlassView } from '@/components/ui/GlassView';
 import React, { useEffect, useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView, TouchableOpacity } from 'react-native-gesture-handler';
 import Animated, {
+    Easing,
     runOnJS,
     useAnimatedStyle,
     useSharedValue,
@@ -35,7 +36,6 @@ const MemoizedTransport = React.memo(TransportContent);
 const MemoizedItinerary = React.memo(ItineraryContent);
 const MemoizedFullMap = React.memo(MapContent);
 
-const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
 export function UnifiedTabs() {
     const router = useRouter();
@@ -229,27 +229,33 @@ export function UnifiedTabs() {
 
     const categoriesAnimatedStyle = useAnimatedStyle(() => {
         const isExplore = Math.abs(translateX.value + 2 * SCREEN_WIDTH) < SCREEN_WIDTH * 0.5;
-
-        const translateYValue = isExplore ? -36 : 0;
-
-
-        return {
-            transform: [{ translateY: withTiming(translateYValue, { duration: 250 }) }],
-            opacity: withTiming(isExplore ? 1 : 0, { duration: 200 }),
-        };
-    });
-
-    const tabBarAnimatedStyle = useAnimatedStyle(() => {
-        // activeIndex 0 is full screen map
-        // We want to hide it for the full map view only
         const shouldHide = activeIndex === 0;
 
         return {
             transform: [{
-                translateY: withTiming(shouldHide ? 150 : 0, { duration: 300 })
+                translateY: withTiming(shouldHide ? 200 : (isExplore ? -36 : 0), {
+                    duration: shouldHide ? 350 : 250,
+                }),
             }],
+            opacity: withTiming(shouldHide ? 0 : (isExplore ? 1 : 0), {
+                duration: 200,
+            }),
+            pointerEvents: (shouldHide || !isExplore) ? 'none' : 'auto',
         };
     });
+
+    const tabBarAnimatedStyle = useAnimatedStyle(() => ({
+        transform: [{
+            translateY: withTiming(activeIndex === 0 ? 300 : 0, {
+                duration: activeIndex === 0 ? 400 : 500,
+                easing: Easing.bezier(0.4, 0, 0.2, 1),
+            }),
+        }],
+        opacity: withTiming(activeIndex === 0 ? 0 : 1, {
+            duration: activeIndex === 0 ? 300 : 450,
+            easing: Easing.ease,
+        }),
+    }));
 
     return (
         <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -284,14 +290,12 @@ export function UnifiedTabs() {
                 </GestureDetector>
 
                 { }
-                <AnimatedBlurView
-                    intensity={50}
-                    tint="dark"
+                <Animated.View
                     pointerEvents={activeIndex === 2 ? 'auto' : 'none'}
                     style={[
                         styles.categoriesOverlay,
                         categoriesAnimatedStyle,
-                        { zIndex: 5, bottom: 10 + insets.bottom }
+                        { zIndex: 5, bottom: 10 + insets.bottom, backgroundColor: theme.cardBackground }
                     ]}
                 >
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesScroll}>
@@ -308,24 +312,26 @@ export function UnifiedTabs() {
                             </TouchableOpacity>
                         ))}
                     </ScrollView>
-                </AnimatedBlurView>
+                </Animated.View>
 
                 { }
-                <AnimatedBlurView
-                    intensity={55}
-                    tint="dark"
+                <Animated.View
+                    pointerEvents={activeIndex === 0 ? 'none' : 'auto'}
                     style={[
                         styles.tabBar,
                         tabBarAnimatedStyle,
-                        { zIndex: 10, bottom: 10 + insets.bottom }
+                        {
+                            zIndex: 10,
+                            bottom: 10 + insets.bottom,
+                        }
                     ]}
                 >
-                    <View style={styles.innerHighlight} pointerEvents="none" />
+                    <GlassView style={{ ...StyleSheet.absoluteFillObject }} />
                     {renderTabItem(1, 'house.fill', i18n.t('home'))}
                     {renderTabItem(2, 'paperplane.fill', i18n.t('explore'))}
                     {renderTabItem(3, 'map.fill', i18n.t('itinerary'))}
                     {renderTabItem(4, 'tram.fill', i18n.t('transport'))}
-                </AnimatedBlurView>
+                </Animated.View>
 
             </GestureHandlerRootView>
         </View>

@@ -10,6 +10,7 @@ import { lineString, point } from '@turf/helpers';
 import lineSlice from '@turf/line-slice';
 import nearestPointOnLine from '@turf/nearest-point-on-line';
 import { BlurView } from 'expo-blur';
+import { GlassView } from '@/components/ui/GlassView';
 import * as Location from 'expo-location';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -834,7 +835,7 @@ export const MapContent = ({ theme, onNavigate, onClose, router, isFocused, favo
             {/* 3. Bottom Category Filters (Map Legend) */}
             {!selectedPoi && !selectedStop && !selectedParking && (
                 <View style={[styles.filterContainer, { bottom: 20 + insets.bottom, alignItems: 'center' }]}>
-                    <BlurView intensity={55} tint="dark" style={styles.legendBlurView}>
+                    <GlassView style={styles.legendBlurView}>
                         <View style={styles.legendInnerView}>
                             {['sights', 'restaurants', 'museums'].map((f, i) => {
                                 const isActive = mapFilter === f && isLayersValues.landmarks;
@@ -860,7 +861,7 @@ export const MapContent = ({ theme, onNavigate, onClose, router, isFocused, favo
                                 );
                             })}
                         </View>
-                    </BlurView>
+                    </GlassView>
                 </View>
             )}
             {
@@ -1162,7 +1163,6 @@ const styles = StyleSheet.create({
         shadowRadius: 16,
     },
     legendInnerView: {
-        backgroundColor: 'rgba(28, 26, 24, 0.45)',
         paddingVertical: 8,
         paddingHorizontal: 10,
     },
