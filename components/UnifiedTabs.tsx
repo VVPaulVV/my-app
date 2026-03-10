@@ -295,7 +295,7 @@ export function UnifiedTabs() {
                     style={[
                         styles.categoriesOverlay,
                         categoriesAnimatedStyle,
-                        { zIndex: 5, bottom: 10 + insets.bottom, backgroundColor: 'transparent' }
+                        { zIndex: 5, bottom: 74 + insets.bottom, backgroundColor: 'transparent' }
                     ]}
                 >
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesScroll}>
