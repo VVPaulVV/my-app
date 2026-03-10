@@ -16,9 +16,9 @@ import {
     Image,
     Linking,
     Platform,
-    Pressable,
     Animated as RNAnimated,
     StyleSheet,
+    Switch,
     Text, TextInput, TouchableOpacity,
     View
 } from 'react-native';
@@ -212,7 +212,7 @@ export const MapContent = ({ theme, onNavigate, onClose, router, isFocused, favo
     const [selectedParking, setSelectedParking] = useState<ParkingData | null>(null);
 
     // Map State
-    const [isLayersVisible, setIsLayersVisible] = useState(false);
+    const [layersVisible, setLayersVisible] = useState(false);
     const [isSeasonalMode, setIsSeasonalMode] = useState(false);
     const [isLayersValues, setIsLayersValues] = useState({ landmarks: false, mainLines: true, parking: false, batorama: true });
 
@@ -586,7 +586,7 @@ export const MapContent = ({ theme, onNavigate, onClose, router, isFocused, favo
 
     // --- UI Logic Hooks ---
     const handleClose = () => {
-        setIsLayersVisible(false);
+        setLayersVisible(false);
         onClose();
     };
 
@@ -1105,36 +1105,54 @@ export const MapContent = ({ theme, onNavigate, onClose, router, isFocused, favo
                 <TouchableOpacity style={[styles.fabButton, { backgroundColor: Colors[colorScheme].cardBackground, borderColor: Colors[colorScheme].border }]} onPress={handleClose}><MaterialIcons name="close" size={24} color={Colors[colorScheme].text} /></TouchableOpacity>
                 <TouchableOpacity style={[styles.fabButton, { backgroundColor: Colors[colorScheme].cardBackground, borderColor: Colors[colorScheme].border }]} onPress={handleResetNorth}><IconSymbol name="location.north.circle" size={24} color={Colors[colorScheme].text} /></TouchableOpacity>
                 <TouchableOpacity style={[styles.fabButton, { backgroundColor: Colors[colorScheme].cardBackground, borderColor: Colors[colorScheme].border }]} onPress={handleLocateMe}><MaterialIcons name="my-location" size={24} color={Colors[colorScheme].text} /></TouchableOpacity>
-                <TouchableOpacity style={[styles.fabButton, { backgroundColor: Colors[colorScheme].cardBackground, borderColor: Colors[colorScheme].border }]} onPress={() => setIsLayersVisible(true)}><IconSymbol name="line.3.horizontal" size={24} color={Colors[colorScheme].text} /></TouchableOpacity>
+                <TouchableOpacity style={[styles.fabButton, { backgroundColor: Colors[colorScheme].cardBackground, borderColor: Colors[colorScheme].border }]} onPress={() => setLayersVisible(!layersVisible)}><IconSymbol name="line.3.horizontal" size={24} color={Colors[colorScheme].text} /></TouchableOpacity>
             </View>
 
-            {/* 6. Layers Menu (Modal) */}
-            {
-                isLayersVisible && (
-                    <Pressable style={styles.layersBackdrop} onPress={() => setIsLayersVisible(false)}>
-                        <Animated.View entering={SlideInDown} exiting={SlideOutDown} style={[styles.layersMenu, { backgroundColor: theme.cardBackground }]}>
-                            <Text style={[styles.layersTitle, { color: theme.text }]}>Map Layers</Text>
-                            <TouchableOpacity style={styles.layerRow} onPress={() => setIsLayersValues(v => ({ ...v, mainLines: !v.mainLines }))}>
-                                <IconSymbol name={isLayersValues.mainLines ? "checkmark.circle.fill" : "circle"} size={22} color={theme.primary} />
-                                <Text style={[styles.layerText, { color: theme.text }]}>Main Lines (Tram)</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.layerRow} onPress={() => setIsLayersValues(v => ({ ...v, parking: !v.parking }))}>
-                                <IconSymbol name={isLayersValues.parking ? "checkmark.circle.fill" : "circle"} size={22} color={theme.primary} />
-                                <Text style={[styles.layerText, { color: theme.text }]}>Parking</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.layerRow} onPress={() => setIsLayersValues(v => ({ ...v, batorama: !v.batorama }))}>
-                                <IconSymbol name={isLayersValues.batorama ? "checkmark.circle.fill" : "circle"} size={22} color={theme.primary} />
-                                <Text style={[styles.layerText, { color: theme.text }]}>Batorama Locations</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.layerRow} onPress={() => setIsSeasonalMode(!isSeasonalMode)}>
-                                <IconSymbol name={isSeasonalMode ? "checkmark.circle.fill" : "circle"} size={22} color={theme.primary} />
-                                <Text style={[styles.layerText, { color: theme.text }]}>Christmas Mode (Hide Closed Stops)</Text>
-                            </TouchableOpacity>
-
-                        </Animated.View>
-                    </Pressable>
-                )
-            }
+            {/* 6. Layers Menu (Floating) */}
+            {layersVisible && (
+                <Animated.View entering={SlideInDown} exiting={SlideOutDown} style={{
+                    position: 'absolute',
+                    top: 258,
+                    right: 20,
+                    backgroundColor: Colors[colorScheme].cardBackground,
+                    borderRadius: 10,
+                    borderWidth: 1,
+                    borderColor: Colors[colorScheme].border,
+                    padding: 14,
+                    gap: 10,
+                    minWidth: 200,
+                    zIndex: 105
+                }}>
+                    <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 9, fontWeight: '400', color: Colors[colorScheme].textSecondary, letterSpacing: 0.12, textTransform: 'uppercase', marginBottom: 4 }}>MAP LAYERS</Text>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                        <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 12, fontWeight: '300', color: Colors[colorScheme].text }}>Lines & Batorama</Text>
+                        <Switch
+                            value={isLayersValues.mainLines && isLayersValues.batorama}
+                            onValueChange={(val) => setIsLayersValues(v => ({ ...v, mainLines: val, batorama: val }))}
+                            trackColor={{ false: Colors[colorScheme].border, true: '#C9524A' }}
+                            thumbColor="#F5F0EB"
+                        />
+                    </View>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                        <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 12, fontWeight: '300', color: Colors[colorScheme].text }}>Parking</Text>
+                        <Switch
+                            value={isLayersValues.parking}
+                            onValueChange={(val) => setIsLayersValues(v => ({ ...v, parking: val }))}
+                            trackColor={{ false: Colors[colorScheme].border, true: '#C9524A' }}
+                            thumbColor="#F5F0EB"
+                        />
+                    </View>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                        <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 12, fontWeight: '300', color: Colors[colorScheme].text }}>Christmas Mode</Text>
+                        <Switch
+                            value={isSeasonalMode}
+                            onValueChange={(val) => setIsSeasonalMode(val)}
+                            trackColor={{ false: Colors[colorScheme].border, true: '#C9524A' }}
+                            thumbColor="#F5F0EB"
+                        />
+                    </View>
+                </Animated.View>
+            )}
         </SafeAreaView >
     );
 };
