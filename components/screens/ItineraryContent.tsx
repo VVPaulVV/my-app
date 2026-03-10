@@ -16,13 +16,13 @@ import Animated, {
     withSpring,
 } from 'react-native-reanimated';
 
+import { getCategoryColor } from '@/constants/categoryColors';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useFavorites } from '@/hooks/use-favorites';
 import i18n, { tData } from '@/i18n';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { CATEGORIES } from '@/data/categories';
 import { MUSEUMS } from '@/data/museums';
 import { RESTAURANTS } from '@/data/restaurants';
 import { SIGHTS } from '@/data/sights';
@@ -53,12 +53,8 @@ function DraggableRow({
     const top = useSharedValue(index * ROW_HEIGHT);
 
     const catColor = useMemo(() => {
-        return (
-            CATEGORIES.find(c => c.nameKey === item.category)?.color ||
-            CATEGORIES.find(c => c.id === item.category)?.color ||
-            CATEGORIES[0].color
-        );
-    }, [item.category]);
+        return getCategoryColor(item.type || item.category);
+    }, [item.type, item.category]);
 
     const startY = useSharedValue(0);
     const isDragging = useSharedValue(false);
@@ -130,16 +126,14 @@ function DraggableRow({
             <Animated.View style={[style]}>
                 <View style={styles.timelineItem}>
                     <View style={styles.timelineConnector}>
-                        <View
-                            style={[
-                                styles.timelineNode,
-                                { backgroundColor: catColor, borderColor: theme.background },
-                            ]}
-                        >
-                            <Text style={styles.timelineNumber}>
+                        <View style={[styles.timelineNode, { backgroundColor: 'rgba(201,82,74,0.12)' }]}>
+                            <Text style={[styles.timelineNumber, { color: theme.tint }]}>
                                 {positions.value[id] !== undefined ? positions.value[id] + 1 : ''}
                             </Text>
                         </View>
+                        {positions.value[id] !== sharedData.value.length - 1 && (
+                            <View style={[styles.timelineLine, { backgroundColor: theme.border }]} />
+                        )}
                     </View>
 
                     <TouchableOpacity
@@ -153,23 +147,14 @@ function DraggableRow({
                         ]}
                         onPress={() => onPress(id)}
                     >
+                        <View style={[styles.categoryBar, { backgroundColor: catColor }]} />
+
                         <Image source={item.image} style={styles.image} />
 
                         <View style={styles.content}>
                             <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>
                                 {tData(item, 'name')}
                             </Text>
-
-                            <View
-                                style={[
-                                    styles.categoryBadge,
-                                    { backgroundColor: catColor + '40' },
-                                ]}
-                            >
-                                <Text style={[styles.categoryText, { color: theme.text }]}>
-                                    {item.category?.toUpperCase()}
-                                </Text>
-                            </View>
 
                             <View style={styles.locationContainer}>
                                 <IconSymbol
@@ -181,7 +166,7 @@ function DraggableRow({
                                     style={[styles.subtitle, { color: theme.textSecondary }]}
                                     numberOfLines={1}
                                 >
-                                    {tData(item, 'location')}
+                                    {tData(item, 'location')} • {item.category?.toUpperCase()}
                                 </Text>
                             </View>
                         </View>
@@ -262,26 +247,26 @@ export function ItineraryContent() {
                 {data.length > 0 && (
                     <TouchableOpacity
                         onPress={() => router.push({ pathname: '/', params: { category: 'map' } })}
-                        style={{ padding: 10, backgroundColor: theme.primary, borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                        style={{ paddingHorizontal: 16, paddingVertical: 8, backgroundColor: theme.cardBackground, borderRadius: 20, borderWidth: 1, borderColor: theme.border, flexDirection: 'row', alignItems: 'center', gap: 6 }}
                     >
-                        <IconSymbol name="map.fill" size={16} color="#FFF" />
-                        <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 14 }}>{i18n.t('viewRoute')}</Text>
+                        <IconSymbol name="map.fill" size={14} color={theme.text} />
+                        <Text style={{ color: theme.text, fontSize: 12, fontWeight: '600' }}>{i18n.t('viewRoute')}</Text>
                     </TouchableOpacity>
                 )}
             </View>
 
             {data.length === 0 ? (
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 100 }}>
-                    <IconSymbol name="list.bullet.clipboard" size={48} color={theme.textSecondary} style={{ marginBottom: 16, opacity: 0.5 }} />
-                    <Text style={{ color: theme.text, fontSize: 18, fontWeight: '600', marginBottom: 8 }}>{i18n.t('emptyItineraryTitle')}</Text>
-                    <Text style={{ color: theme.textSecondary, fontSize: 14, textAlign: 'center', maxWidth: 250, lineHeight: 20 }}>
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 48 }}>
+                    <IconSymbol name="list.bullet.clipboard" size={48} color={theme.textSecondary} style={{ marginBottom: 16, opacity: 0.3 }} />
+                    <Text style={{ color: theme.textSecondary, fontSize: 16, fontWeight: '300', marginBottom: 8, textAlign: 'center' }}>{i18n.t('emptyItineraryTitle')}</Text>
+                    <Text style={{ color: theme.textSecondary, fontSize: 12, fontWeight: '200', textAlign: 'center', maxWidth: 250 }}>
                         {i18n.t('emptyItineraryDesc')}
                     </Text>
                     <TouchableOpacity
                         onPress={() => router.push({ pathname: '/', params: { tab: 'explore' } })}
-                        style={{ marginTop: 24, paddingVertical: 12, paddingHorizontal: 24, backgroundColor: theme.cardBackground, borderRadius: 20, borderWidth: 1, borderColor: theme.border }}
+                        style={{ marginTop: 24, paddingVertical: 12, paddingHorizontal: 24, backgroundColor: theme.tint, borderRadius: 6 }}
                     >
-                        <Text style={{ color: theme.primary, fontWeight: 'bold' }}>{i18n.t('browseSights')}</Text>
+                        <Text style={{ color: '#F0EBE3', fontSize: 13, fontWeight: '700', letterSpacing: 0.08, textTransform: 'uppercase' }}>{i18n.t('browseSights')}</Text>
                     </TouchableOpacity>
                 </View>
             ) : (
@@ -317,17 +302,21 @@ export function ItineraryContent() {
 const styles = StyleSheet.create({
     container: { flex: 1, paddingTop: 42 },
     header: { paddingHorizontal: 20, marginBottom: 24 },
-    headerTitle: { fontSize: 32, fontWeight: '800' },
+    headerTitle: {
+        fontSize: 34,
+        fontWeight: '300',
+        letterSpacing: 0.01,
+        marginBottom: 14
+    },
 
     timelineItem: {
         flexDirection: 'row',
-        marginBottom: 16,
+        marginBottom: 7,
         paddingHorizontal: 20,
     },
 
     timelineConnector: {
         width: 30,
-        justifyContent: 'center',
         alignItems: 'center',
         marginRight: 10,
     },
@@ -335,32 +324,54 @@ const styles = StyleSheet.create({
     timelineNode: {
         width: 24,
         height: 24,
-        borderRadius: 12,
+        borderRadius: 4,
         alignItems: 'center',
         justifyContent: 'center',
-        borderWidth: 3,
+    },
+
+    timelineLine: {
+        position: 'absolute',
+        top: 24,
+        bottom: -7, // spans row margin
+        width: 1,
     },
 
     timelineNumber: {
-        color: 'white',
-        fontSize: 12,
-        fontWeight: 'bold',
+        fontSize: 11,
+        fontWeight: '700',
+        textAlign: 'center',
     },
 
     card: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 12,
-        borderRadius: 20,
+        padding: 11,
+        paddingHorizontal: 12,
+        borderRadius: 6,
         borderWidth: 1,
+        overflow: 'hidden',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 3,
+        position: 'relative'
     },
 
-    image: { width: 56, height: 56, borderRadius: 14 },
+    categoryBar: {
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        bottom: 0,
+        width: 3,
+    },
+
+    image: { width: 56, height: 56, borderRadius: 6, marginLeft: 8 },
     content: { flex: 1, marginLeft: 14 },
 
-    title: { fontSize: 17, fontWeight: '700' },
-    subtitle: { fontSize: 13, flex: 1 },
+    title: { fontSize: 14, fontWeight: '400' },
+    subtitle: { fontSize: 11, fontWeight: '200', letterSpacing: 0.03, flex: 1 },
 
     locationContainer: {
         flexDirection: 'row',

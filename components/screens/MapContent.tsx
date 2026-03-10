@@ -1,5 +1,7 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { getCategoryColor } from '@/constants/categoryColors';
+import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { MaterialIcons } from '@expo/vector-icons';
 import polyline from '@mapbox/polyline';
 import Mapbox from '@rnmapbox/maps';
@@ -7,6 +9,7 @@ import distance from '@turf/distance';
 import { lineString, point } from '@turf/helpers';
 import lineSlice from '@turf/line-slice';
 import nearestPointOnLine from '@turf/nearest-point-on-line';
+import { BlurView } from 'expo-blur';
 import * as Location from 'expo-location';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -16,7 +19,6 @@ import {
     Platform,
     Pressable,
     Animated as RNAnimated,
-    ScrollView,
     StyleSheet,
     Text, TextInput, TouchableOpacity,
     View
@@ -32,7 +34,6 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 // --- Assets/Data assumed from your imports ---
 import { BATORAMA_DATA } from '@/data/batorama';
 import { BATORAMA_LOCATIONS } from '@/data/batorama_locations';
-import { CATEGORIES } from '@/data/categories';
 import { MUSEUMS } from '@/data/museums';
 import { RESTAURANTS } from '@/data/restaurants';
 import { SIGHTS } from '@/data/sights';
@@ -108,9 +109,14 @@ const PoiMarker = React.memo(({ item, nearestStop, onPress, isSelected, theme }:
 
                     <View style={[
                         styles.poiMarkerBody,
-                        { backgroundColor: getMapCategoryColor(item.type) }
+                        {
+                            backgroundColor: getCategoryColor(item.type),
+                            opacity: isSelected ? 1 : 0.8,
+                            borderColor: isSelected ? theme.background : 'transparent',
+                            borderWidth: isSelected ? 2 : 0,
+                        }
                     ]}>
-                        <IconSymbol name={getCategoryIcon(item.type)} size={14} color="#FFF" />
+                        <IconSymbol name={getCategoryIcon(item.type)} size={14} color={theme.background} />
                     </View>
                 )}
 
@@ -125,7 +131,7 @@ const PoiMarker = React.memo(({ item, nearestStop, onPress, isSelected, theme }:
 
                             return lines.slice(0, 3).map((line: string, idx: number) => (
                                 <View key={idx} style={[styles.poiBadge, { backgroundColor: TRANSPORT_LINES.find(l => l.id.endsWith(line))?.color || '#333' }]}>
-                                    <Text style={styles.poiBadgeText}>{line}</Text>
+                                    <Text style={[styles.poiBadgeText, { color: theme.background }]}>{line}</Text>
                                 </View>
                             ));
                         })()}
@@ -161,7 +167,7 @@ const ParkingMapMarker = ({ item, isFocused, onSelect, theme }: { item: ParkingD
                 styles.marker,
                 { backgroundColor: color, zIndex: isFocused ? 999 : 1, transform: [{ scale: scaleAnim }] },
             ]}>
-                <View style={styles.markerInner}><Text style={styles.markerText}>P</Text></View>
+                <View style={[styles.markerInner, { backgroundColor: theme.background }]}><Text style={[styles.markerText, { color: color }]}>P</Text></View>
             </RNAnimated.View>
         </Mapbox.PointAnnotation>
     );
@@ -169,7 +175,7 @@ const ParkingMapMarker = ({ item, isFocused, onSelect, theme }: { item: ParkingD
 
 // --- Main Extracted Map Component ---
 export const MapContent = ({ theme, onNavigate, onClose, router, isFocused, favorites = [], focusId }: any) => {
-
+    const colorScheme = useColorScheme() ?? 'light';
     const mapCamera = useRef<Mapbox.Camera>(null);
     const [search, setSearch] = useState('');
     const [mapFilter, setMapFilter] = useState('all');
@@ -424,7 +430,7 @@ export const MapContent = ({ theme, onNavigate, onClose, router, isFocused, favo
                             if (respA.routes?.[0]) {
                                 newSegments.push({
                                     coordinates: polyline.decode(respA.routes[0].geometry, 6).map((c: any) => [c[1], c[0]]),
-                                    color: '#999', // Walking color
+                                    color: theme.textSecondary, // Walking color
                                     type: 'walking'
                                 });
                             }
@@ -442,7 +448,7 @@ export const MapContent = ({ theme, onNavigate, onClose, router, isFocused, favo
                             if (respC.routes?.[0]) {
                                 newSegments.push({
                                     coordinates: polyline.decode(respC.routes[0].geometry, 6).map((c: any) => [c[1], c[0]]),
-                                    color: '#999',
+                                    color: theme.textSecondary,
                                     type: 'walking'
                                 });
                             }
@@ -756,8 +762,8 @@ export const MapContent = ({ theme, onNavigate, onClose, router, isFocused, favo
                             textSize: 12,
                             textOffset: [0, 1.2],
                             textAnchor: 'top',
-                            textColor: '#333',
-                            textHaloColor: '#FFF',
+                            textColor: theme.text,
+                            textHaloColor: theme.background,
                             textHaloWidth: 2,
                             textOpacity: selectedLineId ? 1 : ['step', ['zoom'], 0, 15, 1]
                         }}
@@ -805,7 +811,7 @@ export const MapContent = ({ theme, onNavigate, onClose, router, isFocused, favo
                                 borderColor: line.color,
                                 borderWidth: isSelected ? 0 : 2
                             }]}>
-                            <Text style={{ color: isSelected ? '#FFF' : theme.text, fontWeight: 'bold' }}>{l}</Text>
+                            <Text style={{ color: isSelected ? theme.background : theme.text, fontWeight: 'bold' }}>{l}</Text>
                         </TouchableOpacity>
                     );
                 })}
@@ -819,198 +825,217 @@ export const MapContent = ({ theme, onNavigate, onClose, router, isFocused, favo
                         borderColor: '#3498db',
                         borderWidth: isLayersValues.batorama ? 0 : 2
                     }]}>
-                    <IconSymbol name="ferry.fill" size={20} color={isLayersValues.batorama ? '#FFF' : '#3498db'} />
+                    <IconSymbol name="ferry.fill" size={20} color={isLayersValues.batorama ? theme.background : '#3498db'} />
                 </TouchableOpacity>
 
             </Animated.View>
 
             {/* 3. Bottom Category Filters */}
+            {/* 3. Bottom Category Filters (Map Legend) */}
             {!selectedPoi && !selectedStop && !selectedParking && (
-                <View style={[styles.filterContainer, { bottom: 20 + insets.bottom }]}>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
-                        {['sights', 'restaurants', 'museums'].map(f => {
-                            const isActive = mapFilter === f && isLayersValues.landmarks;
-                            const category = CATEGORIES.find(c => c.nameKey === f);
-                            const color = category?.color || theme.primary;
+                <View style={[styles.filterContainer, { bottom: 20 + insets.bottom, alignItems: 'center' }]}>
+                    <BlurView intensity={55} tint="dark" style={styles.legendBlurView}>
+                        <View style={styles.legendInnerView}>
+                            {['sights', 'restaurants', 'museums'].map((f, i) => {
+                                const isActive = mapFilter === f && isLayersValues.landmarks;
 
-                            return (
-                                <TouchableOpacity key={f} onPress={() => {
-                                    if (isActive) {
-                                        setIsLayersValues(v => ({ ...v, landmarks: false }));
-                                        setMapFilter('all');
-                                    } else {
-                                        setMapFilter(f);
-                                        setIsLayersValues(v => ({ ...v, landmarks: true }));
-                                    }
-                                    setSelectedPoi(null);
-                                    setSelectedStop(null);
-                                    setSelectedParking(null);
-                                }}
-                                    style={[styles.filterChip, {
-                                        backgroundColor: isActive ? color : theme.cardBackground,
-                                        borderColor: color,
-                                        borderWidth: 2,
-                                    }]}>
-                                    <Text style={[styles.filterText, { color: isActive ? '#000' : theme.text }]}>{i18n.t(f as any)}</Text>
-                                </TouchableOpacity>
-                            );
-                        })}
-                    </ScrollView>
-                </View>
-            )}
-
-            {/* 4. POI Detail Card */}
-            {selectedPoi && (
-                <Animated.View entering={SlideInDown} exiting={FadeOutDown} style={[styles.detailCard, { backgroundColor: theme.cardBackground, zIndex: 1000, bottom: 30 + insets.bottom }]}>
-                    <TouchableOpacity
-                        activeOpacity={0.9}
-                        style={{ flexDirection: 'row', gap: 12, paddingBottom: 12 }}
-                        onPress={() => {
-                            if (selectedPoi.type === 'batorama') {
-                                onNavigate('/batorama');
-                                setSelectedPoi(null);
-                                setSelectedStop(null);
-                            } else {
-                                router.push(`/sight/${selectedPoi.id}` as any);
-                            }
-                        }}
-                    >
-
-                        {selectedPoi.image && (
-                            <Image
-                                source={typeof selectedPoi.image === 'number' ? selectedPoi.image : { uri: selectedPoi.image }}
-                                style={{ width: 90, height: 90, borderRadius: 12, backgroundColor: '#eee' }}
-                            />
-                        )}
-                        <View style={{ flex: 1, justifyContent: 'center' }}>
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                <Text style={{ fontSize: 18, fontWeight: 'bold', color: theme.text, flex: 1 }} numberOfLines={1}>{tData(selectedPoi, 'name')}</Text>
-                                <TouchableOpacity
-                                    style={[styles.smallCloseButton, { backgroundColor: theme.border, marginLeft: 8 }]}
-                                    onPress={(e) => {
-                                        e.stopPropagation();
+                                return (
+                                    <TouchableOpacity key={f} onPress={() => {
+                                        if (isActive) {
+                                            setIsLayersValues(v => ({ ...v, landmarks: false }));
+                                            setMapFilter('all');
+                                        } else {
+                                            setMapFilter(f);
+                                            setIsLayersValues(v => ({ ...v, landmarks: true }));
+                                        }
                                         setSelectedPoi(null);
                                         setSelectedStop(null);
-                                    }}
-                                >
-                                    <IconSymbol name="xmark" size={14} color={theme.text} />
-                                </TouchableOpacity>
-                            </View>
-                            <Text numberOfLines={2} style={{ fontSize: 13, color: theme.icon, marginTop: 4 }}>{tData(selectedPoi, 'shortDescription')}</Text>
+                                        setSelectedParking(null);
+                                    }} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: i === 2 ? 0 : 6 }}>
+                                        <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: getCategoryColor(f), marginRight: 6, opacity: isActive ? 1 : 0.5 }} />
+                                        <Text style={{ fontSize: 9, fontWeight: '200', color: Colors[colorScheme].textSecondary }}>
+                                            {i18n.t(f as any).toUpperCase()}
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    </BlurView>
+                </View>
+            )}
+            {
+                selectedPoi && (
+                    <Animated.View entering={SlideInDown} exiting={FadeOutDown} style={[styles.detailCard, {
+                        backgroundColor: Colors[colorScheme].cardBackground,
+                        zIndex: 1000,
+                        bottom: 0,
+                        paddingBottom: Math.max(insets.bottom, 20),
+                        borderTopLeftRadius: 8,
+                        borderTopRightRadius: 8,
+                        borderTopWidth: 1,
+                        borderTopColor: Colors[colorScheme].border,
+                        overflow: 'hidden',
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.2,
+                        shadowRadius: 8,
+                        elevation: 3
+                    }]}>
+                        <View style={{ width: 28, height: 3, borderRadius: 2, backgroundColor: Colors[colorScheme].border, alignSelf: 'center', marginTop: 8, marginBottom: 12 }} />
+                        <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, backgroundColor: getCategoryColor(selectedPoi.type) }} />
 
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-                                <View style={[styles.miniChip, { backgroundColor: getCategoryColor(selectedPoi.type) }]}>
-                                    <Text style={styles.miniChipText}>{i18n.t(selectedPoi.type as any).toUpperCase()}</Text>
-                                </View>
-                                <View style={{ flexDirection: 'row', gap: 12 }}>
+                        <TouchableOpacity
+                            activeOpacity={0.9}
+                            style={{ flexDirection: 'row', gap: 12, paddingBottom: 12 }}
+                            onPress={() => {
+                                if (selectedPoi.type === 'batorama') {
+                                    onNavigate('/batorama');
+                                    setSelectedPoi(null);
+                                    setSelectedStop(null);
+                                } else {
+                                    router.push(`/sight/${selectedPoi.id}` as any);
+                                }
+                            }}
+                        >
+
+                            {selectedPoi.image && (
+                                <Image
+                                    source={typeof selectedPoi.image === 'number' ? selectedPoi.image : { uri: selectedPoi.image }}
+                                    style={{ width: 90, height: 90, borderRadius: 12, backgroundColor: '#eee' }}
+                                />
+                            )}
+                            <View style={{ flex: 1, justifyContent: 'center' }}>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <Text style={{ fontSize: 17, fontWeight: '400', color: Colors[colorScheme].text, flex: 1 }} numberOfLines={1}>{tData(selectedPoi, 'name')}</Text>
                                     <TouchableOpacity
-                                        style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.cardBackground, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, borderWidth: 1, borderColor: theme.border }}
+                                        style={[styles.smallCloseButton, { backgroundColor: Colors[colorScheme].border, marginLeft: 8 }]}
                                         onPress={(e) => {
                                             e.stopPropagation();
-                                            handleDirections(selectedPoi);
+                                            setSelectedPoi(null);
+                                            setSelectedStop(null);
                                         }}
-
-
                                     >
-                                        <IconSymbol name="location.fill" size={14} color={theme.primary} />
-                                        <Text style={{ color: theme.text, fontSize: 12, fontWeight: '700', marginLeft: 4 }}>{i18n.t('go')}</Text>
+                                        <IconSymbol name="xmark" size={14} color={Colors[colorScheme].text} />
                                     </TouchableOpacity>
+                                </View>
+                                <Text numberOfLines={2} style={{ fontSize: 11, fontWeight: '200', color: Colors[colorScheme].textSecondary, marginTop: 4 }}>{tData(selectedPoi, 'shortDescription')}</Text>
 
-                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                        <Text style={{ color: theme.primary, fontWeight: '700', fontSize: 13, marginRight: 2 }}>{i18n.t('more')}</Text>
-                                        <IconSymbol name="chevron.right" size={14} color={theme.primary} />
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+                                    <View style={[styles.miniChip, { backgroundColor: getCategoryColor(selectedPoi.type) }]}>
+                                        <Text style={styles.miniChipText}>{i18n.t(selectedPoi.type as any).toUpperCase()}</Text>
+                                    </View>
+                                    <View style={{ flexDirection: 'row', gap: 12 }}>
+                                        <TouchableOpacity
+                                            style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.cardBackground, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, borderWidth: 1, borderColor: theme.border }}
+                                            onPress={(e) => {
+                                                e.stopPropagation();
+                                                handleDirections(selectedPoi);
+                                            }}
+
+
+                                        >
+                                            <IconSymbol name="location.fill" size={14} color={theme.primary} />
+                                            <Text style={{ color: theme.text, fontSize: 12, fontWeight: '700', marginLeft: 4 }}>{i18n.t('go')}</Text>
+                                        </TouchableOpacity>
+
+                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            <Text style={{ color: theme.primary, fontWeight: '700', fontSize: 13, marginRight: 2 }}>{i18n.t('more')}</Text>
+                                            <IconSymbol name="chevron.right" size={14} color={theme.primary} />
+                                        </View>
                                     </View>
                                 </View>
                             </View>
-                        </View>
-                    </TouchableOpacity>
-                </Animated.View>
-            )}
+                        </TouchableOpacity>
+                    </Animated.View>
+                )
+            }
 
             {/* 5. StopDetail Card */}
-            {selectedStop && !selectedStop.isBatorama && (
-                <Animated.View entering={SlideInDown} exiting={FadeOutDown} style={[styles.detailCard, { backgroundColor: theme.cardBackground, zIndex: 1000, bottom: 30 + insets.bottom }]}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                        <Text style={[styles.detailTitle, { color: theme.text, flex: 1 }]}>{selectedStop.name}</Text>
-                        <TouchableOpacity style={[styles.closeLineButton, { backgroundColor: theme.border }]} onPress={() => setSelectedStop(null)}>
-                            <MaterialIcons name="close" size={20} color={theme.text} />
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Line Badges */}
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 2 }}>
-                        {(() => {
-                            let lines = selectedStop.lines;
-                            if (typeof lines === 'string') {
-                                try { lines = JSON.parse(lines); } catch (e) { lines = []; }
-                            }
-                            if (!Array.isArray(lines)) lines = [];
-                            return lines.map((l: string, idx: number) => {
-                                const lineData = TRANSPORT_LINES.find(t => t.id.endsWith(l));
-                                const color = lineData?.color || '#333';
-                                const isSelected = selectedLineId === lineData?.id;
-                                return (
-                                    <TouchableOpacity
-                                        key={idx}
-                                        onPress={() => lineData && setSelectedLineId(isSelected ? null : lineData.id)}
-                                        style={{
-                                            backgroundColor: color,
-                                            paddingHorizontal: 8,
-                                            paddingVertical: 4,
-                                            borderRadius: 6,
-                                            minWidth: 24,
-                                            alignItems: 'center',
-                                            opacity: (selectedLineId === null || isSelected) ? 1 : 0.6
-                                        }}
-                                    >
-                                        <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 12 }}>{l}</Text>
-                                    </TouchableOpacity>
-                                );
-                            });
-                        })()}
-                    </View>
-
-                    <View style={styles.arrivalsContainer}>
+            {
+                selectedStop && !selectedStop.isBatorama && (
+                    <Animated.View entering={SlideInDown} exiting={FadeOutDown} style={[styles.detailCard, { backgroundColor: theme.cardBackground, zIndex: 1000, bottom: 30 + insets.bottom }]}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                            <Text style={[styles.arrivalsHeader, { color: theme.textSecondary }]}>{i18n.t('realTimeArrivals')}</Text>
-                            <TouchableOpacity onPress={() => fetchArrivals(selectedStop.name)} disabled={arrivalsLoading}>
-                                <MaterialIcons name="refresh" size={18} color={theme.text} style={{ opacity: arrivalsLoading ? 0.5 : 1 }} />
+                            <Text style={[styles.detailTitle, { color: theme.text, flex: 1 }]}>{selectedStop.name}</Text>
+                            <TouchableOpacity style={[styles.closeLineButton, { backgroundColor: theme.border }]} onPress={() => setSelectedStop(null)}>
+                                <MaterialIcons name="close" size={20} color={theme.text} />
                             </TouchableOpacity>
                         </View>
-                        {arrivalsLoading && <Text style={{ color: theme.textSecondary, fontStyle: 'italic' }}>Loading...</Text>}
-                        {!arrivalsLoading && (
-                            allArrivals
-                                .filter(arr => {
-                                    if (!selectedLineId) return true;
-                                    // Find line for this arrival to match ID
-                                    const line = TRANSPORT_LINES.find(l => l.id.endsWith(arr.PublishedLineName));
-                                    return line?.id === selectedLineId;
-                                })
-                                .slice(0, 5)
-                                .map((arr, idx) => {
-                                    const lineData = TRANSPORT_LINES.find(l => l.id.endsWith(arr.PublishedLineName));
-                                    const color = lineData?.color || '#333';
-                                    const diffMins = Math.max(0, Math.floor((new Date(arr.MonitoredCall.ExpectedArrivalTime).getTime() - Date.now()) / 60000));
-                                    const isSelected = selectedLineId === lineData?.id;
 
+                        {/* Line Badges */}
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 2 }}>
+                            {(() => {
+                                let lines = selectedStop.lines;
+                                if (typeof lines === 'string') {
+                                    try { lines = JSON.parse(lines); } catch (e) { lines = []; }
+                                }
+                                if (!Array.isArray(lines)) lines = [];
+                                return lines.map((l: string, idx: number) => {
+                                    const lineData = TRANSPORT_LINES.find(t => t.id.endsWith(l));
+                                    const color = lineData?.color || '#333';
+                                    const isSelected = selectedLineId === lineData?.id;
                                     return (
-                                        <View key={idx} style={styles.arrivalRow}>
-                                            <TouchableOpacity
-                                                onPress={() => lineData && setSelectedLineId(isSelected ? null : lineData.id)}
-                                                style={[styles.linePill, { backgroundColor: color, borderWidth: 0, borderColor: 'transparent' }]}
-                                            >
-                                                <Text style={styles.linePillText}>{arr.PublishedLineName}</Text>
-                                            </TouchableOpacity>
-                                            <Text style={[styles.arrivalDest, { color: theme.text }]} numberOfLines={1}>{arr.DestinationName}</Text>
-                                            <Text style={[styles.arrivalTime, { color: diffMins <= 5 ? theme.success : theme.text }]}>{diffMins === 0 ? 'Now' : `${diffMins} min`}</Text>
-                                        </View>
+                                        <TouchableOpacity
+                                            key={idx}
+                                            onPress={() => lineData && setSelectedLineId(isSelected ? null : lineData.id)}
+                                            style={{
+                                                backgroundColor: color,
+                                                paddingHorizontal: 8,
+                                                paddingVertical: 4,
+                                                borderRadius: 6,
+                                                minWidth: 24,
+                                                alignItems: 'center',
+                                                opacity: (selectedLineId === null || isSelected) ? 1 : 0.6
+                                            }}
+                                        >
+                                            <Text style={{ color: theme.background, fontWeight: 'bold', fontSize: 12 }}>{l}</Text>
+                                        </TouchableOpacity>
                                     );
-                                })
-                        )}
-                        {!arrivalsLoading && allArrivals.length === 0 && <Text style={{ color: theme.textSecondary }}>No arrivals found.</Text>}
-                    </View>
-                </Animated.View>
-            )}
+                                });
+                            })()}
+                        </View>
+
+                        <View style={styles.arrivalsContainer}>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                <Text style={[styles.arrivalsHeader, { color: theme.textSecondary }]}>{i18n.t('realTimeArrivals')}</Text>
+                                <TouchableOpacity onPress={() => fetchArrivals(selectedStop.name)} disabled={arrivalsLoading}>
+                                    <MaterialIcons name="refresh" size={18} color={theme.text} style={{ opacity: arrivalsLoading ? 0.5 : 1 }} />
+                                </TouchableOpacity>
+                            </View>
+                            {arrivalsLoading && <Text style={{ color: theme.textSecondary, fontStyle: 'italic' }}>Loading...</Text>}
+                            {!arrivalsLoading && (
+                                allArrivals
+                                    .filter(arr => {
+                                        if (!selectedLineId) return true;
+                                        // Find line for this arrival to match ID
+                                        const line = TRANSPORT_LINES.find(l => l.id.endsWith(arr.PublishedLineName));
+                                        return line?.id === selectedLineId;
+                                    })
+                                    .slice(0, 5)
+                                    .map((arr, idx) => {
+                                        const lineData = TRANSPORT_LINES.find(l => l.id.endsWith(arr.PublishedLineName));
+                                        const color = lineData?.color || '#333';
+                                        const diffMins = Math.max(0, Math.floor((new Date(arr.MonitoredCall.ExpectedArrivalTime).getTime() - Date.now()) / 60000));
+                                        const isSelected = selectedLineId === lineData?.id;
+
+                                        return (
+                                            <View key={idx} style={styles.arrivalRow}>
+                                                <TouchableOpacity
+                                                    onPress={() => lineData && setSelectedLineId(isSelected ? null : lineData.id)}
+                                                    style={[styles.linePill, { backgroundColor: color, borderWidth: 0, borderColor: 'transparent' }]}
+                                                >
+                                                    <Text style={[styles.linePillText, { color: theme.background }]}>{arr.PublishedLineName}</Text>
+                                                </TouchableOpacity>
+                                                <Text style={[styles.arrivalDest, { color: theme.text }]} numberOfLines={1}>{arr.DestinationName}</Text>
+                                                <Text style={[styles.arrivalTime, { color: diffMins <= 5 ? theme.success : theme.text }]}>{diffMins === 0 ? 'Now' : `${diffMins} min`}</Text>
+                                            </View>
+                                        );
+                                    })
+                            )}
+                            {!arrivalsLoading && allArrivals.length === 0 && <Text style={{ color: theme.textSecondary }}>No arrivals found.</Text>}
+                        </View>
+                    </Animated.View>
+                )
+            }
 
 
             {/* Parking Details */}
@@ -1043,10 +1068,10 @@ export const MapContent = ({ theme, onNavigate, onClose, router, isFocused, favo
             {/* 5. Right FAB Actions */}
             {/* 5. Right FAB Actions */}
             <View style={styles.closeButtonContainer}>
-                <TouchableOpacity style={[styles.closeButton, { backgroundColor: theme.cardBackground }]} onPress={handleClose}><MaterialIcons name="close" size={24} color={theme.text} /></TouchableOpacity>
-                <TouchableOpacity style={[styles.closeButton, { backgroundColor: theme.cardBackground }]} onPress={handleResetNorth}><IconSymbol name="location.north.circle" size={24} color={theme.text} /></TouchableOpacity>
-                <TouchableOpacity style={[styles.closeButton, { backgroundColor: theme.cardBackground }]} onPress={handleLocateMe}><MaterialIcons name="my-location" size={24} color={theme.text} /></TouchableOpacity>
-                <TouchableOpacity style={[styles.closeButton, { backgroundColor: theme.cardBackground }]} onPress={() => setIsLayersVisible(true)}><IconSymbol name="line.3.horizontal" size={24} color={theme.text} /></TouchableOpacity>
+                <TouchableOpacity style={[styles.fabButton, { backgroundColor: Colors[colorScheme].cardBackground, borderColor: Colors[colorScheme].border }]} onPress={handleClose}><MaterialIcons name="close" size={24} color={Colors[colorScheme].text} /></TouchableOpacity>
+                <TouchableOpacity style={[styles.fabButton, { backgroundColor: Colors[colorScheme].cardBackground, borderColor: Colors[colorScheme].border }]} onPress={handleResetNorth}><IconSymbol name="location.north.circle" size={24} color={Colors[colorScheme].text} /></TouchableOpacity>
+                <TouchableOpacity style={[styles.fabButton, { backgroundColor: Colors[colorScheme].cardBackground, borderColor: Colors[colorScheme].border }]} onPress={handleLocateMe}><MaterialIcons name="my-location" size={24} color={Colors[colorScheme].text} /></TouchableOpacity>
+                <TouchableOpacity style={[styles.fabButton, { backgroundColor: Colors[colorScheme].cardBackground, borderColor: Colors[colorScheme].border }]} onPress={() => setIsLayersVisible(true)}><IconSymbol name="line.3.horizontal" size={24} color={Colors[colorScheme].text} /></TouchableOpacity>
             </View>
 
             {/* 6. Layers Menu (Modal) */}
@@ -1097,8 +1122,8 @@ const styles = StyleSheet.create({
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.2,
-        shadowRadius: 3,
-        elevation: 4,
+        shadowRadius: 8,
+        elevation: 3,
     },
     filterText: {
         fontSize: 14,
@@ -1106,17 +1131,47 @@ const styles = StyleSheet.create({
         textTransform: 'capitalize',
         textAlign: 'center',
     },
-    detailCard: { position: 'absolute', bottom: 35, left: 20, right: 20, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 0, borderRadius: 20, elevation: 6, zIndex: 1000 },
+    detailCard: { position: 'absolute', bottom: 35, left: 20, right: 20, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 0, borderRadius: 8, elevation: 6, zIndex: 1000 },
     poiImage: { width: 80, height: 80, borderRadius: 8 },
     detailTitle: { fontSize: 22, fontWeight: 'bold' },
     closeButtonContainer: { position: 'absolute', top: 50, right: 20, zIndex: 101, gap: 8 },
     closeButton: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', elevation: 5 },
+    fabButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 6,
+        borderWidth: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    legendBlurView: {
+        borderRadius: 8,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.07)',
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(255, 255, 255, 0.11)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.4,
+        shadowRadius: 16,
+    },
+    legendInnerView: {
+        backgroundColor: 'rgba(28, 26, 24, 0.45)',
+        paddingVertical: 8,
+        paddingHorizontal: 10,
+    },
     layersBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end', zIndex: 2000 },
     layersMenu: { padding: 24, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: 40 },
     layersTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 20 },
     layerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
     layerText: { fontSize: 16, marginLeft: 12 },
-    poiMarkerBody: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#FFF' },
+    poiMarkerBody: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5 },
     batoramaMarker: {
         width: 28,
         height: 28,
@@ -1136,11 +1191,11 @@ const styles = StyleSheet.create({
 
 
     poiBadgeContainer: { position: 'absolute', top: 4, right: 0, flexDirection: 'row', gap: 2 },
-    poiBadge: { paddingHorizontal: 3, borderRadius: 4, borderWidth: 1, borderColor: '#FFF' },
-    poiBadgeText: { color: '#FFF', fontSize: 8, fontWeight: '800' },
-    marker: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#FFF' },
+    poiBadge: { paddingHorizontal: 3, borderRadius: 4, borderWidth: 1, borderColor: '#FFF' }, // Leaving static ones unchanged if they can't access theme and don't matter much or I changed them inline where used
+    poiBadgeText: { fontSize: 8, fontWeight: '800' },
+    marker: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
     markerInner: { width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-    markerText: { color: '#FFF', fontSize: 12, fontWeight: 'bold' },
+    markerText: { fontSize: 12, fontWeight: 'bold' },
     closeLineButton: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
     arrivalsContainer: { marginTop: 0, paddingTop: 4, minHeight: 180 },
     arrivalsHeader: { fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 0.5 },
@@ -1152,6 +1207,6 @@ const styles = StyleSheet.create({
     progressTrack: { height: 8, borderRadius: 4, width: '100%', overflow: 'hidden' },
     progressBar: { height: '100%', borderRadius: 4 },
     miniChip: { paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4 },
-    miniChipText: { fontSize: 10, fontWeight: '700', color: '#FFF', letterSpacing: 0.5 },
+    miniChipText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
     smallCloseButton: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
 });

@@ -67,8 +67,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "8b765a2a-c6a6-423d-91e1-d6a827be078a"
+        "projectId": "fa8462bd-597f-4ba4-8402-6ab329a7e05b"
       }
-    }
+    },
+    "owner": "spectruh"
   }
 }

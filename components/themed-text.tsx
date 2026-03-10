@@ -45,20 +45,23 @@ export function ThemedText({
 
 const styles = StyleSheet.create({
   heading: {
-    fontSize: 40,
-    lineHeight: 48,
+    fontSize: 32,
+    fontWeight: '300',
+    letterSpacing: 0.01,
   },
   body: {
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 14,
+    fontWeight: '400',
   },
   label: {
     fontSize: 13,
     fontWeight: '700',
-    lineHeight: 20,
+    letterSpacing: 0.08,
+    textTransform: 'uppercase',
   },
   caption: {
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 11,
+    fontWeight: '200',
+    letterSpacing: 0.03,
   },
 });

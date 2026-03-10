@@ -103,16 +103,37 @@ export const WeatherWidget = () => {
 
     return (
         <View style={styles.container}>
-            <View style={[styles.content, { backgroundColor: theme.surface }]}>
+            <View style={[
+                styles.content,
+                {
+                    backgroundColor: theme.cardBackground,
+                    borderColor: theme.border,
+                }
+            ]}>
+                <View style={[styles.accentBar, { backgroundColor: theme.tint }]} />
+
                 <View style={styles.weatherLine}>
-                    <IconSymbol name={iconName as any} size={24} color={theme.accent} />
+                    <IconSymbol name={iconName as any} size={24} color={theme.accent} style={{ opacity: 0.9 }} />
                     <Text style={[styles.tempText, { color: theme.text }]}>
                         {Math.round(weather.temperature)}°C
                     </Text>
                 </View>
-                <Text style={[styles.descText, { color: theme.textMuted }]}>
+
+                {/* Adding pseudo-city label since none is provided by current open-meteo response without geocoding */}
+                <Text style={[styles.cityLabel, { color: theme.tint }]}>
+                    Strasbourg
+                </Text>
+
+                <View style={[styles.divider, { backgroundColor: theme.border }]} />
+
+                <Text style={[styles.descText, { color: theme.textSecondary }]}>
                     {description.toUpperCase()}
                 </Text>
+                <View style={styles.secondaryContainer}>
+                    <Text style={[styles.secondaryInfo, { color: theme.textSecondary }]}>
+                        WIND: {weather.windspeed} km/h
+                    </Text>
+                </View>
             </View>
         </View>
     );
@@ -128,25 +149,60 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     content: {
-        paddingHorizontal: 12,
-        paddingVertical: 10,
-        borderRadius: 12,
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        borderWidth: 1,
         alignItems: 'flex-start',
-        gap: 2,
+        position: 'relative',
+        overflow: 'hidden',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 3,
+    },
+    accentBar: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 2,
     },
     weatherLine: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
+        marginTop: 4,
     },
     tempText: {
-        fontSize: 32,
-        fontFamily: 'CormorantGaramond_300Light',
-        lineHeight: 38,
+        fontSize: 38,
+        fontWeight: '300',
+        letterSpacing: -0.01,
+    },
+    cityLabel: {
+        fontSize: 11,
+        fontWeight: '700',
+        letterSpacing: 0.12,
+        textTransform: 'uppercase',
+        marginTop: 8,
+    },
+    divider: {
+        height: 1,
+        width: '100%',
+        marginVertical: 10,
     },
     descText: {
-        fontSize: 12,
-        fontFamily: 'Outfit_200ExtraLight',
-        letterSpacing: 1.2,
+        fontSize: 13,
+        fontWeight: '200',
+        letterSpacing: 0.04,
+        textTransform: 'uppercase',
+    },
+    secondaryContainer: {
+        marginTop: 4,
+    },
+    secondaryInfo: {
+        fontSize: 11,
+        fontWeight: '200',
     },
 });

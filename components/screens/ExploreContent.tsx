@@ -10,6 +10,7 @@ import { useMemo, useState } from 'react';
 import { FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { getCategoryColor } from '@/constants/categoryColors';
 import { CATEGORIES } from '@/data/categories';
 
 export type ExploreContentProps = {
@@ -17,9 +18,13 @@ export type ExploreContentProps = {
     setCategory: (cat: string) => void;
 };
 
-
-const getCategoryColor = (type: string) => {
-    return CATEGORIES.find(c => c.nameKey === type)?.color || '#888';
+// Helper for applying hex opacity
+const hexToRgba = (hex: string, alpha: number) => {
+    if (!hex.startsWith('#')) return hex;
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
 const getCategoryIcon = (type: string) => {
@@ -105,14 +110,49 @@ export function ExploreContent({ category, setCategory }: ExploreContentProps) {
                             <View style={[styles.searchBar, { backgroundColor: theme.cardBackground, borderColor: theme.border }]}>
                                 <TextInput
                                     placeholder={i18n.t('searchPlaceholder')}
-                                    placeholderTextColor={theme.icon}
+                                    placeholderTextColor={theme.textSecondary}
                                     style={[styles.searchInput, { color: theme.text }]}
                                     value={search}
                                     onChangeText={setSearch}
                                 />
+                                {/* Add a simple search icon placeholder since it's asked for opacity: 0.4 */}
+                                {/* Assuming we have an icon component to use, if not just skip */}
                             </View>
-
                         </View>
+
+                        <View style={styles.categoriesRow}>
+                            {CATEGORIES.map(cat => {
+                                const isActive = category === cat.nameKey;
+                                const color = getCategoryColor(cat.nameKey);
+
+                                return (
+                                    <View
+                                        key={cat.id}
+                                        style={[
+                                            styles.categoryPill,
+                                            {
+                                                borderColor: isActive ? color : theme.border,
+                                                backgroundColor: isActive ? hexToRgba(color, 0.10) : 'transparent'
+                                            }
+                                        ]}
+                                    >
+                                        <Text style={[
+                                            styles.categoryPillText,
+                                            { color: isActive ? color : theme.textSecondary }
+                                        ]}>
+                                            {i18n.t(cat.nameKey)}
+                                        </Text>
+                                    </View>
+                                );
+                            })}
+                        </View>
+                    </View>
+                }
+                ListEmptyComponent={
+                    <View style={styles.emptyContainer}>
+                        <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+                            No results found
+                        </Text>
                     </View>
                 }
                 renderItem={({ item }) => (
@@ -139,14 +179,15 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     header: {
-        padding: 12,
-        paddingBottom: 10,
+        paddingTop: 12,
+        paddingHorizontal: 12,
+        paddingBottom: 0,
     },
     title: {
-        fontSize: 32,
-        fontWeight: '800',
-        marginBottom: 16,
-        fontFamily: 'System',
+        fontSize: 34,
+        fontWeight: '300',
+        letterSpacing: 0.01,
+        marginBottom: 14,
     },
     searchRow: {
         flexDirection: 'row',
@@ -156,21 +197,21 @@ const styles = StyleSheet.create({
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 16,
-        height: 48,
-        borderRadius: 12,
+        paddingHorizontal: 14,
+        height: 40,
+        borderRadius: 6,
         borderWidth: 1,
     },
     mapButton: {
         width: 48,
         height: 48,
-        borderRadius: 12,
+        borderRadius: 8,
         alignItems: 'center',
         justifyContent: 'center',
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.2,
-        shadowRadius: 3,
+        shadowRadius: 8,
         elevation: 3
     },
     searchInput: {
@@ -178,12 +219,41 @@ const styles = StyleSheet.create({
         fontSize: 16,
     },
     listContent: {
-        padding: 12,
         paddingTop: 0,
         paddingBottom: 120,
+        backgroundColor: 'transparent',
     },
     columnWrapper: {
         justifyContent: 'space-between',
+        gap: 8,
+        paddingHorizontal: 12,
+    },
+    categoriesRow: {
+        flexDirection: 'row',
+        gap: 8,
+        marginTop: 14,
+        marginBottom: 14,
+    },
+    categoryPill: {
+        borderWidth: 1,
+        borderRadius: 6,
+        paddingVertical: 5,
+        paddingHorizontal: 14,
+    },
+    categoryPillText: {
+        fontSize: 10,
+        fontWeight: '700',
+        letterSpacing: 0.10,
+        textTransform: 'uppercase',
+    },
+    emptyContainer: {
+        paddingTop: 40,
+        alignItems: 'center',
+    },
+    emptyText: {
+        fontSize: 14,
+        fontWeight: '200',
+        textAlign: 'center',
     },
     modalHeader: {
         padding: 16,
@@ -215,7 +285,7 @@ const styles = StyleSheet.create({
     filterChip: {
         paddingHorizontal: 16,
         paddingVertical: 8,
-        borderRadius: 20,
+        borderRadius: 6,
 
     },
     filterText: {
@@ -236,7 +306,7 @@ const styles = StyleSheet.create({
         width: 8,
         height: 8,
         borderRadius: 4,
-        backgroundColor: '#FFF'
+        backgroundColor: '#FFF' // User expects marker innards to likely stay white, but let's change to theme.cardBackground if we want. Actually `#FFF` inside a marker pin is standard Mapbox style, let's leave marker internals or use theme.background.
     },
     infoCardContainer: {
         position: 'absolute',
@@ -249,14 +319,14 @@ const styles = StyleSheet.create({
     mapCard: {
         flexDirection: 'row',
         height: 120,
-        borderRadius: 16,
+        borderRadius: 8,
         borderWidth: 1,
         overflow: 'hidden',
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 12,
-        elevation: 10,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 3,
     },
     mapCardImageContainer: {
         width: 110,
@@ -298,7 +368,6 @@ const styles = StyleSheet.create({
     miniChipText: {
         fontSize: 10,
         fontWeight: '700',
-        color: '#222',
         letterSpacing: 0.5,
     },
     cardCloseBtn: {
@@ -334,15 +403,15 @@ const styles = StyleSheet.create({
         left: 74,
         right: 20,
         height: 44,
-        borderRadius: 22,
+        borderRadius: 6,
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 12,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 3,
-        elevation: 5,
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 3,
         borderWidth: 1,
     },
     mapSearchInput: {

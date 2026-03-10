@@ -3,9 +3,10 @@ import { CATEGORIES } from '@/data/categories';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useFavorites } from '@/hooks/use-favorites';
 import i18n from '@/i18n';
+import { BlurView } from 'expo-blur';
 import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Dimensions, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Dimensions, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView, TouchableOpacity } from 'react-native-gesture-handler';
 import Animated, {
     runOnJS,
@@ -34,6 +35,7 @@ const MemoizedTransport = React.memo(TransportContent);
 const MemoizedItinerary = React.memo(ItineraryContent);
 const MemoizedFullMap = React.memo(MapContent);
 
+const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
 export function UnifiedTabs() {
     const router = useRouter();
@@ -203,7 +205,10 @@ export function UnifiedTabs() {
         return (
             <TouchableOpacity
                 activeOpacity={0.7}
-                style={styles.tabItem}
+                style={[
+                    styles.tabItem,
+                    isActive && { backgroundColor: 'rgba(201, 82, 74, 0.12)', borderRadius: 12 }
+                ]}
                 onPress={() => switchTab(index)}
             >
                 <IconSymbol
@@ -279,16 +284,14 @@ export function UnifiedTabs() {
                 </GestureDetector>
 
                 { }
-                <Animated.View
+                <AnimatedBlurView
+                    intensity={50}
+                    tint="dark"
                     pointerEvents={activeIndex === 2 ? 'auto' : 'none'}
                     style={[
                         styles.categoriesOverlay,
-                        {
-                            backgroundColor: theme.cardBackground,
-                            borderColor: theme.border,
-                        },
                         categoriesAnimatedStyle,
-                        { zIndex: 5, bottom: 10 + insets.bottom } // Ensure it's above other content but below full overlays if needed
+                        { zIndex: 5, bottom: 10 + insets.bottom }
                     ]}
                 >
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesScroll}>
@@ -305,32 +308,24 @@ export function UnifiedTabs() {
                             </TouchableOpacity>
                         ))}
                     </ScrollView>
-                </Animated.View>
+                </AnimatedBlurView>
 
                 { }
-                <Animated.View style={[styles.tabBar, {
-                    backgroundColor: theme.cardBackground,
-                    borderColor: theme.border,
-                    zIndex: 10,
-                    bottom: 10 + insets.bottom,
-                    ...Platform.select({
-                        ios: {
-                            shadowColor: '#000',
-                            shadowOffset: { width: 0, height: 4 },
-                            shadowOpacity: 0.15,
-                            shadowRadius: 8,
-                        },
-                        android: {
-                            elevation: 16,
-                        }
-                    })
-                }, tabBarAnimatedStyle]}>
+                <AnimatedBlurView
+                    intensity={55}
+                    tint="dark"
+                    style={[
+                        styles.tabBar,
+                        tabBarAnimatedStyle,
+                        { zIndex: 10, bottom: 10 + insets.bottom }
+                    ]}
+                >
+                    <View style={styles.innerHighlight} pointerEvents="none" />
                     {renderTabItem(1, 'house.fill', i18n.t('home'))}
                     {renderTabItem(2, 'paperplane.fill', i18n.t('explore'))}
                     {renderTabItem(3, 'map.fill', i18n.t('itinerary'))}
                     {renderTabItem(4, 'tram.fill', i18n.t('transport'))}
-
-                </Animated.View>
+                </AnimatedBlurView>
 
             </GestureHandlerRootView>
         </View>
@@ -352,21 +347,39 @@ const styles = StyleSheet.create({
     },
     tabBar: {
         position: 'absolute',
-        bottom: 15,
         left: 10,
         right: 10,
-        flexDirection: 'row',
         height: 60,
-        borderRadius: 30,
+        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-around',
+        backgroundColor: 'rgba(28, 26, 24, 0.45)',
+        borderRadius: 20,
         borderWidth: 1,
-        borderTopWidth: 0,
+        borderColor: 'rgba(255, 255, 255, 0.07)',
+        borderTopColor: 'rgba(255, 255, 255, 0.11)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.5,
+        shadowRadius: 24,
+        elevation: 16,
+        overflow: 'hidden',
+    },
+    innerHighlight: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.06)',
     },
     tabItem: {
         alignItems: 'center',
         justifyContent: 'center',
-        padding: 5,
+        paddingVertical: 5,
+        paddingHorizontal: 8,
         minWidth: 60,
     },
     tabLabel: {
@@ -383,14 +396,19 @@ const styles = StyleSheet.create({
     },
     categoriesOverlay: {
         position: 'absolute',
-        bottom: 15,
         left: 10,
         right: 10,
         height: 75,
-        zIndex: 5,
-        borderRadius: 30,
+        backgroundColor: 'rgba(28, 26, 24, 0.45)',
+        borderRadius: 20,
         borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.07)',
         paddingTop: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.4,
+        shadowRadius: 16,
+        overflow: 'hidden',
     },
     categoriesScroll: {
         paddingHorizontal: 20,

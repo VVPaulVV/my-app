@@ -48,12 +48,12 @@ export function BatoramaContent() {
                 </View>
 
                 {/* Hero Image */}
-                <View style={[styles.heroContainer, { backgroundColor: '#FFF', borderRadius: 24, overflow: 'hidden' }]}>
+                <View style={[styles.heroContainer, { backgroundColor: theme.cardBackground, borderRadius: 8, overflow: 'hidden' }]}>
                     <Image source={BATORAMA_DATA.image} style={[styles.heroImage, { height: 160 }]} resizeMode="contain" />
 
                     <View style={[styles.badge, { backgroundColor: theme.primary }]}>
-                        <IconSymbol name="star.fill" size={14} color="#FFF" />
-                        <Text style={styles.badgeText}>{data.mustDo}</Text>
+                        <IconSymbol name="star.fill" size={14} color={theme.background} />
+                        <Text style={[styles.badgeText, { color: theme.background }]}>{data.mustDo}</Text>
                     </View>
                 </View>
 
@@ -145,8 +145,8 @@ export function BatoramaContent() {
                     style={[styles.mainButton, { backgroundColor: theme.primary }]}
                     onPress={() => Linking.openURL(BATORAMA_DATA.website)}
                 >
-                    <Text style={styles.mainButtonText}>{i18n.t('reserveOnline') || 'Book Online'}</Text>
-                    <IconSymbol name="arrow.up.right" size={20} color="#FFF" />
+                    <Text style={[styles.mainButtonText, { color: theme.background }]}>{i18n.t('reserveOnline') || 'Book Online'}</Text>
+                    <IconSymbol name="arrow.up.right" size={20} color={theme.background} />
                 </TouchableOpacity>
 
             </ScrollView>
@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
     heroImage: {
         width: '100%',
         height: 220,
-        borderRadius: 24,
+        borderRadius: 8,
     },
     badge: {
         position: 'absolute',
@@ -209,11 +209,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 12,
         paddingVertical: 6,
-        borderRadius: 12,
+        borderRadius: 6,
         gap: 6,
     },
     badgeText: {
-        color: '#FFF',
         fontSize: 12,
         fontWeight: '800',
     },
@@ -231,7 +230,7 @@ const styles = StyleSheet.create({
         fontWeight: '500',
     },
     card: {
-        borderRadius: 24,
+        borderRadius: 8,
         padding: 20,
         borderWidth: 1,
         marginBottom: 16,
@@ -244,7 +243,7 @@ const styles = StyleSheet.create({
     iconContainer: {
         width: 48,
         height: 48,
-        borderRadius: 16,
+        borderRadius: 6,
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 16,
@@ -310,7 +309,7 @@ const styles = StyleSheet.create({
     infoIcon: {
         width: 36,
         height: 36,
-        borderRadius: 10,
+        borderRadius: 6,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -333,14 +332,13 @@ const styles = StyleSheet.create({
     mainButton: {
         flexDirection: 'row',
         height: 64,
-        borderRadius: 20,
+        borderRadius: 6,
         alignItems: 'center',
         justifyContent: 'center',
         gap: 12,
         marginBottom: 20,
     },
     mainButtonText: {
-        color: '#FFF',
         fontSize: 18,
         fontWeight: '800',
     },

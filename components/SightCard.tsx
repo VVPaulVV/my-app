@@ -16,6 +16,15 @@ type SightCardProps = {
     style?: any;
 };
 
+// Helper for applying hex opacity
+const hexToRgba = (hex: string, alpha: number) => {
+    if (!hex.startsWith('#')) return hex;
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
 export const SightCard = React.memo(({ sight, onPress, style }: SightCardProps) => {
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
@@ -46,17 +55,6 @@ export const SightCard = React.memo(({ sight, onPress, style }: SightCardProps) 
 
     const accentColor = getCategoryColor(sight.category);
 
-    // Shadow in dark mode only as per rules
-    const shadowStyle = colorScheme === 'dark' ? {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 5,
-    } : {
-        elevation: 0, // No heavy visible borders/shadows in light mode by default
-    };
-
     return (
         <Pressable
             onPress={onPress}
@@ -68,12 +66,12 @@ export const SightCard = React.memo(({ sight, onPress, style }: SightCardProps) 
                 styles.card,
                 {
                     backgroundColor: theme.cardBackground,
+                    borderColor: theme.border,
                     transform: [{ scale }],
-                    ...shadowStyle
                 }
             ]}>
-                {/* 4px Category Accent Border */}
-                <View style={[styles.accentBorder, { backgroundColor: accentColor }]} />
+                {/* Left Category Bar */}
+                <View style={[styles.leftBar, { backgroundColor: accentColor }]} />
 
                 <View style={styles.innerContainer}>
                     <View style={styles.imageContainer}>
@@ -82,22 +80,25 @@ export const SightCard = React.memo(({ sight, onPress, style }: SightCardProps) 
                             style={styles.image}
                             resizeMode="cover"
                         />
+                        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: hexToRgba(accentColor, 0.15) }]} />
                         <Pressable
                             onPress={handleToggleFavorite}
                             style={styles.favoriteBadge}
                         >
-                            <Ionicons name={isFav ? "heart" : "heart-outline"} size={20} color={isFav ? "#FF4B4B" : "#FFF"} />
+                            <Ionicons name={isFav ? "heart" : "heart-outline"} size={20} color={isFav ? theme.primary : theme.background} />
                         </Pressable>
                     </View>
 
                     <View style={styles.content}>
-                        <ThemedText style={styles.categoryLabel} muted>
-                            {i18n.t(sight.category).toUpperCase()}
-                        </ThemedText>
-                        <ThemedText style={styles.title} variant="body" numberOfLines={2}>
+                        <View style={[styles.categoryBadge, { backgroundColor: hexToRgba(accentColor, 0.12) }]}>
+                            <ThemedText style={[styles.categoryBadgeText, { color: accentColor }]}>
+                                {i18n.t(sight.category)}
+                            </ThemedText>
+                        </View>
+                        <ThemedText style={[styles.title, { color: theme.text }]} numberOfLines={2}>
                             {tData(sight, 'name')}
                         </ThemedText>
-                        <ThemedText style={styles.subtitle} muted numberOfLines={1}>
+                        <ThemedText style={[styles.subtitle, { color: theme.textSecondary }]} numberOfLines={1}>
                             {tData(sight, 'shortDescription')}
                         </ThemedText>
                     </View>
@@ -115,51 +116,74 @@ const styles = StyleSheet.create({
     },
     card: {
         flex: 1,
-        borderRadius: 10,
+        borderRadius: 8,
+        borderWidth: 1,
         overflow: 'hidden',
-        flexDirection: 'row',
         height: 240,
+        position: 'relative',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 8,
+        elevation: 4,
     },
-    accentBorder: {
-        width: 4,
-        height: '100%',
+    leftBar: {
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        bottom: 0,
+        width: 3,
+        zIndex: 1,
     },
     innerContainer: {
         flex: 1,
+        padding: 12,
     },
     imageContainer: {
         height: '65%',
         width: '100%',
-        position: 'relative',
+        borderRadius: 6,
         overflow: 'hidden',
+        position: 'relative',
     },
     image: {
         width: '100%',
         height: '100%',
     },
-    content: {
-        padding: 12,
-        height: '35%',
-        justifyContent: 'center',
-    },
-    categoryLabel: {
-        fontSize: 12,
-        marginBottom: 2,
-    },
-    title: {
-        fontSize: 17,
-        lineHeight: 22,
-    },
-    subtitle: {
-        fontSize: 12,
-        marginTop: 2,
-    },
     favoriteBadge: {
         position: 'absolute',
-        top: 10,
-        right: 10,
+        top: 8,
+        right: 8,
         backgroundColor: 'rgba(0,0,0,0.3)',
-        padding: 8,
+        padding: 6,
         borderRadius: 20,
-    }
+    },
+    content: {
+        flex: 1,
+        paddingTop: 12,
+        justifyContent: 'center',
+    },
+    categoryBadge: {
+        alignSelf: 'flex-start',
+        paddingVertical: 2,
+        paddingHorizontal: 7,
+        borderRadius: 4,
+        marginBottom: 6,
+    },
+    categoryBadgeText: {
+        fontSize: 9,
+        fontWeight: '700',
+        letterSpacing: 0.12,
+        textTransform: 'uppercase',
+    },
+    title: {
+        fontSize: 15,
+        fontWeight: '400',
+        marginBottom: 2,
+    },
+    subtitle: {
+        fontSize: 11,
+        fontWeight: '200',
+        letterSpacing: 0.03,
+    },
 });

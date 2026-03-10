@@ -81,7 +81,7 @@ const EmergencyModal = React.memo(({ info, onClose }: { info: EmergencyInfo | nu
                     ]}
                 >
                     <View style={[styles.expandedTipIconContainer, { backgroundColor: activeInfo.color }]}>
-                        <IconSymbol name={activeInfo.icon as any} size={32} color="white" />
+                        <IconSymbol name={activeInfo.icon as any} size={32} color={theme.background} />
                     </View>
 
                     <TouchableOpacity style={styles.closeExpandedTip} onPress={onClose}>
@@ -183,7 +183,7 @@ export function HomeContent({ onNavigate, onLanguageChange }: { onNavigate: (pat
                 { }
                 <View style={styles.header}>
                     <View>
-                        <Text style={[styles.greeting, { color: theme.textSecondary }]}>{i18n.t('welcome')}</Text>
+                        <Text style={[styles.greeting, { color: theme.tint }]}>{i18n.t('welcome').toUpperCase()}</Text>
                         <Text style={[styles.title, { color: theme.text }]}>Strasbourg</Text>
                         <WeatherWidget />
                     </View>
@@ -202,23 +202,24 @@ export function HomeContent({ onNavigate, onLanguageChange }: { onNavigate: (pat
                 {featuredSight && (
                     <TouchableOpacity
                         activeOpacity={0.9}
-                        style={styles.heroCard}
+                        style={[styles.heroCard, { backgroundColor: theme.cardBackground, borderColor: theme.border }]}
                         onPress={() => router.push(`/sight/${featuredSight.id}` as any)}
                     >
+                        <View style={styles.glowOverlay} />
                         <Image source={featuredSight.image} style={styles.heroImage} />
                         <View style={styles.heroOverlay}>
                             <View style={[styles.badge, { backgroundColor: theme.primary }]}>
-                                <Text style={styles.badgeText}>{i18n.t('mustSee') || 'MUST SEE'}</Text>
+                                <Text style={[styles.badgeText, { color: theme.background }]}>{i18n.t('mustSee') || 'MUST SEE'}</Text>
                             </View>
-                            <Text style={styles.heroTitle}>{tData(featuredSight, 'name')}</Text>
-                            <Text style={styles.heroSubtitle}>{tData(featuredSight, 'shortDescription')}</Text>
+                            <Text style={[styles.heroTitle, { color: theme.background }]} numberOfLines={2}>{tData(featuredSight, 'name')}</Text>
+                            <Text style={styles.heroSubtitle} numberOfLines={2}>{tData(featuredSight, 'shortDescription')}</Text>
                         </View>
                     </TouchableOpacity>
                 )}
 
                 { }
                 <View style={[styles.sectionHeader, { marginTop: 10 }]}>
-                    <Text style={[styles.sectionTitle, { color: theme.text }]}>{i18n.t('necessaryInfo')}</Text>
+                    <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>{i18n.t('necessaryInfo')}</Text>
                 </View>
                 <View style={styles.necessaryLayout}>
                     <View style={styles.emergencyColumn}>
@@ -277,20 +278,21 @@ export function HomeContent({ onNavigate, onLanguageChange }: { onNavigate: (pat
                 </View>
 
                 <View style={styles.sectionHeader}>
-                    <Text style={[styles.sectionTitle, { color: theme.text }]}>{i18n.t('popularActivity') || 'Popular Activity'}</Text>
+                    <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>{i18n.t('popularActivity') || 'Popular Activity'}</Text>
                 </View>
 
                 {BATORAMA_DATA && (
                     <TouchableOpacity
                         activeOpacity={0.9}
-                        style={styles.heroCard}
+                        style={[styles.heroCard, { backgroundColor: theme.cardBackground, borderColor: theme.border }]}
                         onPress={() => onNavigate('/batorama')}
                     >
+                        <View style={styles.glowOverlay} />
                         <Image source={BATORAMA_DATA.image} style={styles.heroImage} />
 
                         <View style={styles.heroOverlay}>
 
-                            <Text style={styles.heroTitle}>{tData(BATORAMA_DATA, 'name')}</Text>
+                            <Text style={[styles.heroTitle, { color: theme.background }]}>{tData(BATORAMA_DATA, 'name')}</Text>
                             <Text style={styles.heroSubtitle}>
                                 {((BATORAMA_DATA.translations as any)[i18n.locale] || BATORAMA_DATA.translations.en).tagline}
                             </Text>
@@ -302,7 +304,7 @@ export function HomeContent({ onNavigate, onLanguageChange }: { onNavigate: (pat
 
                 { }
                 <View style={styles.sectionHeader}>
-                    <Text style={[styles.sectionTitle, { color: theme.text }]}>{i18n.t('quickActions')}</Text>
+                    <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>{i18n.t('quickActions')}</Text>
                 </View>
                 <View style={styles.quickActionsGrid}>
                     <TouchableOpacity
@@ -312,7 +314,7 @@ export function HomeContent({ onNavigate, onLanguageChange }: { onNavigate: (pat
                         <View style={[styles.actionIcon, { backgroundColor: '#F3E5F5' }]}>
                             <IconSymbol name="map.fill" size={24} color="#7B1FA2" />
                         </View>
-                        <Text style={[styles.actionLabel, { color: theme.text }]}>{i18n.t('map') || 'Map'}</Text>
+                        <Text style={[styles.actionLabel, { color: theme.textSecondary }]}>{i18n.t('map') || 'Map'}</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -322,7 +324,7 @@ export function HomeContent({ onNavigate, onLanguageChange }: { onNavigate: (pat
                         <View style={[styles.actionIcon, { backgroundColor: '#E0F2F1' }]}>
                             <IconSymbol name="tram.fill" size={24} color="#00796B" />
                         </View>
-                        <Text style={[styles.actionLabel, { color: theme.text }]}>{i18n.t('transport')}</Text>
+                        <Text style={[styles.actionLabel, { color: theme.textSecondary }]}>{i18n.t('transport')}</Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>
@@ -417,9 +419,9 @@ const styles = StyleSheet.create({
         marginBottom: 24,
     },
     greeting: {
-        fontSize: 16,
-        fontWeight: '500',
-        letterSpacing: 0.5,
+        fontSize: 10,
+        fontWeight: '700',
+        letterSpacing: 0.15,
     },
     title: {
         fontSize: 34,
@@ -441,31 +443,36 @@ const styles = StyleSheet.create({
     heroCard: {
         width: '100%',
         height: 240,
-        borderRadius: 24,
+        borderRadius: 8,
+        borderWidth: 1,
         overflow: 'hidden',
         marginBottom: 30,
-        backgroundColor: '#eee',
-        elevation: 10,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
+        padding: 16,
+        position: 'relative',
+    },
+    glowOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(201,82,74,0.10)',
     },
     heroImage: {
         width: '100%',
         height: '100%',
         position: 'absolute',
+        top: 16,
+        left: 16,
+        borderRadius: 6,
     },
     heroOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.3)',
         justifyContent: 'flex-end',
         padding: 20,
+        borderRadius: 6,
     },
     heroTitle: {
-        color: 'white',
-        fontSize: 28,
-        fontWeight: '800',
+        fontSize: 22,
+        fontWeight: '300',
+        letterSpacing: 0.01,
         marginBottom: 4,
     },
     heroSubtitle: {
@@ -482,7 +489,6 @@ const styles = StyleSheet.create({
         borderRadius: 8,
     },
     badgeText: {
-        color: 'white',
         fontSize: 10,
         fontWeight: '800',
         textTransform: 'uppercase',
@@ -494,11 +500,13 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 16,
+        marginBottom: 8,
     },
     sectionTitle: {
-        fontSize: 22,
+        fontSize: 10,
         fontWeight: '700',
+        letterSpacing: 0.12,
+        textTransform: 'uppercase',
     },
     modalOverlay: {
 
@@ -540,7 +548,7 @@ const styles = StyleSheet.create({
     exploreButton: {
         width: (SCREEN_WIDTH - 52) / 2,
         padding: 16,
-        borderRadius: 20,
+        borderRadius: 6,
         borderWidth: 1,
         alignItems: 'center',
         marginBottom: 12,
@@ -548,7 +556,7 @@ const styles = StyleSheet.create({
     exploreIcon: {
         width: 44,
         height: 44,
-        borderRadius: 14,
+        borderRadius: 6,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 8,
@@ -564,8 +572,9 @@ const styles = StyleSheet.create({
     },
     actionButton: {
         width: (SCREEN_WIDTH - 52) / 2,
-        padding: 16,
-        borderRadius: 20,
+        paddingVertical: 10,
+        paddingHorizontal: 8,
+        borderRadius: 8,
         borderWidth: 1,
         alignItems: 'center',
         justifyContent: 'center',
@@ -573,14 +582,13 @@ const styles = StyleSheet.create({
     actionIcon: {
         width: 48,
         height: 48,
-        borderRadius: 14,
+        borderRadius: 6,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 8,
     },
     actionLabel: {
-        fontSize: 13,
-        fontWeight: '600',
+        fontSize: 9,
     },
     tipsScroll: {
         paddingRight: 20,
@@ -590,7 +598,7 @@ const styles = StyleSheet.create({
         width: 160,
         height: 180,
         padding: 16,
-        borderRadius: 24,
+        borderRadius: 8,
         marginRight: 12,
         borderWidth: 1,
         justifyContent: 'center',
@@ -598,7 +606,7 @@ const styles = StyleSheet.create({
     tipIconContainer: {
         width: 44,
         height: 44,
-        borderRadius: 14,
+        borderRadius: 6,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 12,
@@ -650,7 +658,7 @@ const styles = StyleSheet.create({
     expandedTipIconContainer: {
         width: 64,
         height: 64,
-        borderRadius: 20,
+        borderRadius: 8,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 20,
@@ -711,17 +719,17 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         padding: 12,
-        borderRadius: 20,
+        borderRadius: 8,
         borderWidth: 1,
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 2,
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 3,
     },
     emergencyIconContainerSmall: {
         width: 40,
         height: 40,
-        borderRadius: 14,
+        borderRadius: 6,
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 10,
@@ -737,18 +745,18 @@ const styles = StyleSheet.create({
 
         flex: 1,
         padding: 20,
-        borderRadius: 24,
+        borderRadius: 8,
         borderWidth: 1,
         justifyContent: 'space-between',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
         shadowRadius: 8,
         elevation: 3,
     },
     guideIconContainer: {
         width: 56,
         height: 56,
-        borderRadius: 18,
+        borderRadius: 6,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 12,

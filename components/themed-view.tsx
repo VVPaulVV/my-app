@@ -17,7 +17,7 @@ export function ThemedView({
 }: ThemedViewProps) {
   const backgroundColor = useThemeColor(
     { light: lightColor, dark: darkColor },
-    variant === 'surface' ? 'surface' : 'background'
+    variant === 'surface' ? 'cardBackground' : 'background'
   );
 
   return <View style={[{ backgroundColor }, style]} {...otherProps} />;

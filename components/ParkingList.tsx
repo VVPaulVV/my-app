@@ -10,17 +10,15 @@ const ParkingRow = ({ parking, theme, onPress, isLast }: { parking: ParkingData,
     const isOpen = parking.etat_descriptif === 'Ouvert';
     const percentFree = parking.total > 0 ? (parking.libre / parking.total) : -1;
 
-    // Determine the dot color based on availability rules:
-    // green (>60% available), orange (10-60% available), red (<10% available) or gray (no data)
-    let indicatorColor = theme.textMuted; // "gray (no data)" or closed
+    let indicatorColor = theme.textSecondary;
 
     if (isOpen && percentFree !== -1) {
         if (percentFree > 0.6) {
-            indicatorColor = theme.success; // "green (>60% available)"
+            indicatorColor = '#4CAF50';
         } else if (percentFree >= 0.1) {
-            indicatorColor = theme.warning; // "orange (10-60% available)"
+            indicatorColor = '#FF9800';
         } else {
-            indicatorColor = theme.error; // "red (<10% available)"
+            indicatorColor = '#F44336';
         }
     }
 
@@ -31,24 +29,29 @@ const ParkingRow = ({ parking, theme, onPress, isLast }: { parking: ParkingData,
             style={[
                 styles.row,
                 {
-                    backgroundColor: theme.surface,
-                    borderBottomWidth: isLast ? 0 : 1,
-                    borderBottomColor: theme.border
+                    backgroundColor: theme.cardBackground,
+                    borderColor: theme.border,
                 }
             ]}
         >
+            <View style={[styles.leftBar, { backgroundColor: indicatorColor }]} />
+
             <View style={styles.rowMain}>
                 <View style={[styles.indicator, { backgroundColor: indicatorColor }]} />
-                <Text style={[styles.rowText, { color: theme.text }]} numberOfLines={1}>
-                    {parking.nom_parking.replace('Parking ', '')}
-                </Text>
+                <View style={styles.textGroup}>
+                    <Text style={[styles.rowText, { color: theme.text }]} numberOfLines={1}>
+                        {parking.nom_parking.replace('Parking ', '')}
+                    </Text>
+                    <Text style={[styles.rowSubtitle, { color: theme.textSecondary }]} numberOfLines={1}>
+                        {isOpen ? i18n.t('parking') : i18n.t('closed')}
+                    </Text>
+                </View>
             </View>
 
             <View style={styles.rowInfo}>
-                <Text style={[styles.rowText, { color: isOpen ? theme.text : theme.textMuted, marginRight: 8 }]}>
-                    {isOpen ? `${parking.libre} ${i18n.t('spots')}` : i18n.t('closed')}
+                <Text style={[styles.spotCount, { color: indicatorColor }]}>
+                    {isOpen ? parking.libre : '-'}
                 </Text>
-                <IconSymbol name="chevron.right" size={12} color={theme.textMuted} />
             </View>
         </TouchableOpacity>
     );
@@ -105,7 +108,7 @@ export function ParkingList({
     const displayData = isExpanded ? sortedData : sortedData.slice(0, 5);
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: theme.background }]}>
             <View style={styles.header}>
                 <View>
                     <Text style={[styles.headerTitle, { color: theme.text }]}>{i18n.t('realTimeParking')}</Text>
@@ -124,7 +127,7 @@ export function ParkingList({
                 </TouchableOpacity>
             </View>
 
-            <View style={[styles.listContainer, { borderColor: theme.border }]}>
+            <View style={styles.listContainer}>
                 {displayData.map((parking, index) => (
                     <ParkingRow
                         key={parking.nom_parking}
@@ -170,11 +173,13 @@ const styles = StyleSheet.create({
         paddingHorizontal: 4,
     },
     headerTitle: {
-        fontSize: 20,
-        fontWeight: '700',
+        fontSize: 28,
+        fontWeight: '300',
+        letterSpacing: 0.01,
     },
     updatedText: {
         fontSize: 12,
+        marginTop: 2,
     },
     centerContainer: {
         padding: 20,
@@ -200,16 +205,31 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     listContainer: {
-        borderRadius: 12,
-        overflow: 'hidden',
-        borderWidth: 1,
+        overflow: 'visible',
     },
     row: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingVertical: 14,
-        paddingHorizontal: 16,
+        paddingVertical: 11,
+        paddingHorizontal: 12,
+        borderRadius: 6,
+        borderWidth: 1,
+        marginBottom: 7,
+        overflow: 'hidden',
+        position: 'relative',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 3,
+    },
+    leftBar: {
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        bottom: 0,
+        width: 3,
     },
     rowMain: {
         flexDirection: 'row',
@@ -217,18 +237,33 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     indicator: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
+        width: 9,
+        height: 9,
+        borderRadius: 4.5,
         marginRight: 10,
     },
+    textGroup: {
+        flex: 1,
+        flexDirection: 'column',
+        justifyContent: 'center',
+    },
     rowText: {
-        fontSize: 14,
-        fontFamily: 'Outfit_400Regular',
+        fontSize: 13,
+        fontWeight: '400',
+    },
+    rowSubtitle: {
+        fontSize: 10,
+        fontWeight: '200',
+        letterSpacing: 0.03,
+        marginTop: 2,
     },
     rowInfo: {
         flexDirection: 'row',
         alignItems: 'center',
+    },
+    spotCount: {
+        fontSize: 14,
+        fontWeight: '600',
     },
     expandButton: {
         marginTop: 12,
@@ -236,7 +271,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         padding: 12,
-        borderRadius: 12,
+        borderRadius: 6,
         borderWidth: 1,
         gap: 8,
     },
@@ -249,7 +284,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 12,
         paddingVertical: 6,
-        borderRadius: 20,
+        borderRadius: 6,
         borderWidth: 1,
         gap: 6,
     },
