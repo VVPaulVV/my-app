@@ -1,4 +1,5 @@
 import { GlassView } from '@/components/ui/GlassView';
+import { getCategoryColor } from '@/constants/categoryColors';
 import { Colors } from '@/constants/theme';
 import { CATEGORIES } from '@/data/categories';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -299,24 +300,28 @@ export function UnifiedTabs() {
                     ]}
                 >
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesScroll}>
-                        {CATEGORIES.map(cat => (
-                            <TouchableOpacity
-                                key={cat.id}
-                                style={[
-                                    styles.categoryPill,
-                                    {
-                                        borderColor: cat.color,
-                                        backgroundColor: 'transparent'
-                                    }
-                                ]}
-                                onPress={() => setCategory(category === cat.nameKey ? '' : cat.nameKey)}
-                            >
-                                <Text style={[
-                                    styles.categoryPillText,
-                                    { color: category === cat.nameKey ? '#F5F0EB' : cat.color }
-                                ]}>{i18n.t(cat.nameKey)}</Text>
-                            </TouchableOpacity>
-                        ))}
+                        {CATEGORIES.map(cat => {
+                            const isActive = category === cat.nameKey;
+                            const catColor = getCategoryColor(cat.nameKey);
+                            return (
+                                <TouchableOpacity
+                                    key={cat.id}
+                                    style={[
+                                        styles.categoryPill,
+                                        {
+                                            borderColor: isActive ? catColor : theme.border,
+                                            backgroundColor: isActive ? catColor : theme.cardBackground
+                                        }
+                                    ]}
+                                    onPress={() => setCategory(category === cat.nameKey ? '' : cat.nameKey)}
+                                >
+                                    <Text style={[
+                                        styles.categoryPillText,
+                                        { color: isActive ? '#F5F0EB' : theme.textSecondary }
+                                    ]}>{i18n.t(cat.nameKey)}</Text>
+                                </TouchableOpacity>
+                            );
+                        })}
                     </ScrollView>
                 </Animated.View>
 
