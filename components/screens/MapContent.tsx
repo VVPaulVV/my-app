@@ -178,6 +178,7 @@ export const MapContent = ({ theme, onNavigate, onClose, router, isFocused, favo
     const mapCamera = useRef<Mapbox.Camera>(null);
     const [search, setSearch] = useState('');
     const [mapFilter, setMapFilter] = useState('all');
+    const [legendVisible, setLegendVisible] = useState(false);
     const insets = useSafeAreaInsets();
 
     // ALL POIS
@@ -832,35 +833,63 @@ export const MapContent = ({ theme, onNavigate, onClose, router, isFocused, favo
             {/* 3. Bottom Category Filters */}
             {/* 3. Bottom Category Filters (Map Legend) */}
             {!selectedPoi && !selectedStop && !selectedParking && (
-                <View style={[styles.filterContainer, { bottom: 20 + insets.bottom, alignItems: 'center' }]}>
-                    <View style={[styles.legendBlurView, { backgroundColor: `rgba(${Colors[colorScheme].cardBackground.match(/\w\w/g)?.map(x => parseInt(x, 16)).join(', ')}, 0.92)` }]}>
-                        <View style={styles.legendInnerView}>
-                            {['sights', 'restaurants', 'museums'].map((f, i) => {
-                                const isActive = mapFilter === f && isLayersValues.landmarks;
+                <>
+                    {legendVisible && (
+                        <View style={{ position: 'absolute', bottom: 70 + insets.bottom, right: 20, zIndex: 100 }}>
+                            <View style={[styles.legendBlurView, {
+                                backgroundColor: Colors[colorScheme].cardBackground,
+                                borderColor: Colors[colorScheme].border,
+                                borderRadius: 8,
+                                padding: 10,
+                                borderWidth: 1
+                            }]}>
+                                {['sights', 'restaurants', 'museums'].map((f, i) => {
+                                    const isActive = mapFilter === f && isLayersValues.landmarks;
 
-                                return (
-                                    <TouchableOpacity key={f} onPress={() => {
-                                        if (isActive) {
-                                            setIsLayersValues(v => ({ ...v, landmarks: false }));
-                                            setMapFilter('all');
-                                        } else {
-                                            setMapFilter(f);
-                                            setIsLayersValues(v => ({ ...v, landmarks: true }));
-                                        }
-                                        setSelectedPoi(null);
-                                        setSelectedStop(null);
-                                        setSelectedParking(null);
-                                    }} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: i === 2 ? 0 : 6 }}>
-                                        <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: getCategoryColor(f), marginRight: 6, opacity: isActive ? 1 : 0.5 }} />
-                                        <Text style={{ fontSize: 9, fontWeight: '200', color: Colors[colorScheme].textSecondary }}>
-                                            {i18n.t(f as any).toUpperCase()}
-                                        </Text>
-                                    </TouchableOpacity>
-                                );
-                            })}
+                                    return (
+                                        <TouchableOpacity key={f} onPress={() => {
+                                            if (isActive) {
+                                                setIsLayersValues(v => ({ ...v, landmarks: false }));
+                                                setMapFilter('all');
+                                            } else {
+                                                setMapFilter(f);
+                                                setIsLayersValues(v => ({ ...v, landmarks: true }));
+                                            }
+                                            setSelectedPoi(null);
+                                            setSelectedStop(null);
+                                            setSelectedParking(null);
+                                        }} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: i === 2 ? 0 : 6 }}>
+                                            <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: getCategoryColor(f), marginRight: 6, opacity: isActive ? 1 : 0.5 }} />
+                                            <Text style={{ fontSize: 9, fontWeight: '200', color: Colors[colorScheme].textSecondary }}>
+                                                {i18n.t(f as any).toUpperCase()}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
                         </View>
-                    </View>
-                </View>
+                    )}
+
+                    <TouchableOpacity
+                        style={{
+                            position: 'absolute',
+                            bottom: 20 + insets.bottom,
+                            right: 20,
+                            width: 40,
+                            height: 40,
+                            borderRadius: 8,
+                            backgroundColor: Colors[colorScheme].cardBackground,
+                            borderWidth: 1,
+                            borderColor: Colors[colorScheme].border,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            zIndex: 100
+                        }}
+                        onPress={() => setLegendVisible(!legendVisible)}
+                    >
+                        <IconSymbol name="line.3.horizontal.decrease.circle" size={24} color={Colors[colorScheme].text} />
+                    </TouchableOpacity>
+                </>
             )}
             {
                 selectedPoi && (

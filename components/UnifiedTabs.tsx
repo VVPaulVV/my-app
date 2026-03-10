@@ -1,10 +1,10 @@
+import { GlassView } from '@/components/ui/GlassView';
 import { Colors } from '@/constants/theme';
 import { CATEGORIES } from '@/data/categories';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useFavorites } from '@/hooks/use-favorites';
 import i18n from '@/i18n';
 import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
-import { GlassView } from '@/components/ui/GlassView';
 import React, { useEffect, useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView, TouchableOpacity } from 'react-native-gesture-handler';
@@ -246,13 +246,13 @@ export function UnifiedTabs() {
 
     const tabBarAnimatedStyle = useAnimatedStyle(() => ({
         transform: [{
-            translateY: withTiming(activeIndex === 0 ? 300 : 0, {
-                duration: activeIndex === 0 ? 400 : 500,
+            translateY: withTiming(0, {
+                duration: 500,
                 easing: Easing.bezier(0.4, 0, 0.2, 1),
             }),
         }],
-        opacity: withTiming(activeIndex === 0 ? 0 : 1, {
-            duration: activeIndex === 0 ? 300 : 450,
+        opacity: withTiming(1, {
+            duration: 450,
             easing: Easing.ease,
         }),
     }));
@@ -316,17 +316,19 @@ export function UnifiedTabs() {
 
                 { }
                 <Animated.View
-                    pointerEvents={activeIndex === 0 ? 'none' : 'auto'}
+                    pointerEvents={'auto'}
                     style={[
                         styles.tabBar,
                         tabBarAnimatedStyle,
                         {
+                            backgroundColor: theme.cardBackground,
                             zIndex: 10,
                             bottom: 10 + insets.bottom,
                         }
                     ]}
                 >
                     <GlassView style={{ ...StyleSheet.absoluteFillObject }} />
+                    {renderTabItem(0, 'map.fill', i18n.t('map') || 'Map')}
                     {renderTabItem(1, 'house.fill', i18n.t('home'))}
                     {renderTabItem(2, 'paperplane.fill', i18n.t('explore'))}
                     {renderTabItem(3, 'map.fill', i18n.t('itinerary'))}
