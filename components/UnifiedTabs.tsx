@@ -302,12 +302,18 @@ export function UnifiedTabs() {
                         {CATEGORIES.map(cat => (
                             <TouchableOpacity
                                 key={cat.id}
-                                style={styles.categoryPill}
+                                style={[
+                                    styles.categoryPill,
+                                    {
+                                        borderColor: cat.color,
+                                        backgroundColor: category === cat.nameKey ? cat.color : 'transparent'
+                                    }
+                                ]}
                                 onPress={() => setCategory(category === cat.nameKey ? '' : cat.nameKey)}
                             >
                                 <Text style={[
                                     styles.categoryPillText,
-                                    { color: category === cat.nameKey ? cat.color : theme.textSecondary }
+                                    { color: category === cat.nameKey ? '#F5F0EB' : cat.color }
                                 ]}>{i18n.t(cat.nameKey)}</Text>
                             </TouchableOpacity>
                         ))}
@@ -406,30 +412,28 @@ const styles = StyleSheet.create({
         position: 'absolute',
         left: 10,
         right: 10,
-        height: 75,
+        height: 56,
         backgroundColor: 'rgba(28, 26, 24, 0.45)',
-        borderRadius: 20,
+        borderRadius: 12,
         borderWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.07)',
-        paddingTop: 8,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.4,
-        shadowRadius: 16,
         overflow: 'hidden',
     },
     categoriesScroll: {
         paddingHorizontal: 20,
-        alignItems: 'flex-start',
-        gap: 24,
+        alignItems: 'center',
+        gap: 10,
     },
     categoryPill: {
-        paddingVertical: 8,
+        borderWidth: 1,
+        borderRadius: 6,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
     },
     categoryPillText: {
-        fontSize: 14,
-        fontWeight: '700',
+        fontSize: 11,
+        fontWeight: '600',
         textTransform: 'uppercase',
-        letterSpacing: 0.8,
+        letterSpacing: 0.08,
     }
 });
