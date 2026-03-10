@@ -277,19 +277,19 @@ const styles = StyleSheet.create({
         gap: 20,
     },
     sideIconWrapper: {
-        width: 64,
-        height: 64,
+        width: 88,
+        height: 88,
         borderRadius: 12,
         alignItems: 'center',
         justifyContent: 'center',
     },
     sideMachineIcon: {
-        width: 48,
-        height: 48,
+        width: 72,
+        height: 72,
     },
     sideValidationIcon: {
-        width: 24,
-        height: 48,
+        width: 40,
+        height: 80,
     },
     machineIcon: {
         width: 100,
