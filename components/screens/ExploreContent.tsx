@@ -131,7 +131,7 @@ export function ExploreContent({ category, setCategory }: ExploreContentProps) {
                 renderItem={({ item }) => (
                     <SightCard
                         sight={item}
-                        onPress={() => router.push(`/sight/${item.id}` as any)}
+                        onPress={() => router.push({ pathname: `/sight/${item.id}` as any, params: { returnCategory: category } })}
                     />
                 )}
                 contentContainerStyle={[styles.listContent, { paddingBottom: 120 + insets.bottom }]}

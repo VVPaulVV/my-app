@@ -30,8 +30,7 @@ export default function SightDetailScreen() {
     const theme = Colors[colorScheme ?? 'light'];
 
 
-    const params = useLocalSearchParams();
-    const id = params.id as string;
+    const { id, returnCategory } = useLocalSearchParams<{ id: string; returnCategory?: string }>();
 
     const router = useRouter();
     const navigation = useNavigation();
@@ -74,7 +73,7 @@ export default function SightDetailScreen() {
         return (
             <View style={[styles.container, { backgroundColor: theme.background, justifyContent: 'center', alignItems: 'center' }]}>
                 <Text style={{ color: theme.text }}>{i18n.t('sightNotFound') || 'Sight not found'}</Text>
-                <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 20 }}>
+                <TouchableOpacity onPress={() => router.push({ pathname: '/', params: { category: returnCategory || 'sights' } })} style={{ marginTop: 20 }}>
                     <Text style={{ color: theme.tint }}>{i18n.t('goBack')}</Text>
                 </TouchableOpacity>
             </View>
@@ -255,7 +254,7 @@ export default function SightDetailScreen() {
                 </Animated.View >
             </ScrollView >
 
-            <TouchableOpacity onPress={() => router.back()} style={[styles.backButton, { backgroundColor: theme.background }]}>
+            <TouchableOpacity onPress={() => router.push({ pathname: '/', params: { category: returnCategory || 'sights' } })} style={[styles.backButton, { backgroundColor: theme.background }]}>
                 <Ionicons name="arrow-back" size={24} color={theme.text} />
             </TouchableOpacity>
 
