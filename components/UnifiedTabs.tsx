@@ -39,6 +39,7 @@ const MemoizedFullMap = React.memo(MapContent);
 
 
 let savedExploreCategory = 'sights';
+let savedActiveIndex = 1;
 
 export function UnifiedTabs() {
     const router = useRouter();
@@ -97,7 +98,7 @@ export function UnifiedTabs() {
     }, [router, params.category]);
 
     const switchTab = React.useCallback((index: number) => {
-
+        savedActiveIndex = index;
         translateX.value = withSpring(-index * SCREEN_WIDTH, {
             damping: 25,
             stiffness: 150,
@@ -151,9 +152,16 @@ export function UnifiedTabs() {
         if (pathname === '/batorama') return;
         if (pathname.startsWith('/sight/')) return;
 
-        // Restore saved category when coming back to the main tabs (no specific category parameter)
-        if (!params.category && pathname === '/') {
+        if (pathname === '/' && !params.category) {
+            // Returning from a sight — restore saved state
+            translateX.value = withSpring(-savedActiveIndex * SCREEN_WIDTH, {
+                damping: 25,
+                stiffness: 150,
+                mass: 0.8
+            });
+            updateActiveTab(savedActiveIndex);
             setCategory(savedExploreCategory);
+            return;
         }
 
         navigateTo(pathname, params.category as string);
