@@ -190,8 +190,9 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     title: {
-        fontSize: 28,
-        fontWeight: '800',
+        fontSize: 26,
+        fontWeight: '300',
+        fontFamily: 'CormorantGaramond_300Light',
     },
     section: {
         marginVertical: 8,
@@ -206,7 +207,9 @@ const styles = StyleSheet.create({
     },
     sectionTitle: {
         fontSize: 18,
-        fontWeight: '700',
+        fontWeight: '300',
+        fontFamily: 'Outfit_300Light',
+        letterSpacing: 0.04,
     },
     bulletRow: {
         flexDirection: 'row',
@@ -224,6 +227,7 @@ const styles = StyleSheet.create({
         flex: 1,
         fontSize: 15,
         lineHeight: 22,
+        fontWeight: '300',
     },
     note: {
         fontSize: 14,
@@ -239,11 +243,11 @@ const styles = StyleSheet.create({
     },
     priceLabel: {
         fontSize: 15,
-        fontWeight: '500',
+        fontWeight: '300',
     },
     priceValue: {
         fontSize: 15,
-        fontWeight: '700',
+        fontWeight: '300',
     },
     priceNote: {
         marginTop: 10,
@@ -278,10 +282,6 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         alignItems: 'center',
         justifyContent: 'center',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 2,
     },
     sideMachineIcon: {
         width: 48,
@@ -314,7 +314,7 @@ const styles = StyleSheet.create({
     closeButton: {
         width: 32,
         height: 32,
-        borderRadius: 16,
+        borderRadius: 6,
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 1,
