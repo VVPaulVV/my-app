@@ -1120,7 +1120,7 @@ export const MapContent = ({ theme, onNavigate, onClose, router, isFocused, favo
                     borderColor: Colors[colorScheme].border,
                     padding: 14,
                     gap: 10,
-                    width: 220,
+                    width: 200,
                     zIndex: 100
                 }}>
                     <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 9, fontWeight: '400', color: Colors[colorScheme].textSecondary, letterSpacing: 0.12, textTransform: 'uppercase', marginBottom: 4 }}>MAP LAYERS</Text>
