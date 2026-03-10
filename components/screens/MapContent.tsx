@@ -901,7 +901,7 @@ export const MapContent = ({ theme, onNavigate, onClose, router, isFocused, favo
                     <Animated.View entering={SlideInDown} exiting={FadeOutDown} style={[styles.detailCard, {
                         backgroundColor: Colors[colorScheme].cardBackground,
                         zIndex: 1000,
-                        bottom: 0,
+                        bottom: 70,
                         paddingBottom: Math.max(insets.bottom, 20),
                         borderTopLeftRadius: 8,
                         borderTopRightRadius: 8,
@@ -986,7 +986,7 @@ export const MapContent = ({ theme, onNavigate, onClose, router, isFocused, favo
             {/* 5. StopDetail Card */}
             {
                 selectedStop && !selectedStop.isBatorama && (
-                    <Animated.View entering={SlideInDown} exiting={FadeOutDown} style={[styles.detailCard, { backgroundColor: theme.cardBackground, zIndex: 1000, bottom: 75 + insets.bottom }]}>
+                    <Animated.View entering={SlideInDown} exiting={FadeOutDown} style={[styles.detailCard, { backgroundColor: theme.cardBackground, zIndex: 1000, bottom: 145 + insets.bottom }]}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                             <Text style={[styles.detailTitle, { color: theme.text, flex: 1 }]}>{selectedStop.name}</Text>
                             <TouchableOpacity style={[styles.closeLineButton, { backgroundColor: theme.border }]} onPress={() => setSelectedStop(null)}>
