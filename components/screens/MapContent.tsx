@@ -1112,7 +1112,7 @@ export const MapContent = ({ theme, onNavigate, onClose, router, isFocused, favo
             {layersVisible && (
                 <Animated.View entering={SlideInDown} exiting={SlideOutDown} style={{
                     position: 'absolute',
-                    top: 120,
+                    top: 210,
                     right: 10,
                     backgroundColor: Colors[colorScheme].cardBackground,
                     borderRadius: 10,
@@ -1121,7 +1121,7 @@ export const MapContent = ({ theme, onNavigate, onClose, router, isFocused, favo
                     padding: 14,
                     gap: 10,
                     width: 220,
-                    zIndex: 105
+                    zIndex: 100
                 }}>
                     <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 9, fontWeight: '400', color: Colors[colorScheme].textSecondary, letterSpacing: 0.12, textTransform: 'uppercase', marginBottom: 4 }}>MAP LAYERS</Text>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
