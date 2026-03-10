@@ -304,8 +304,8 @@ const styles = StyleSheet.create({
     },
     layersMenu: {
         padding: 24,
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
+        borderTopLeftRadius: 8,
+        borderTopRightRadius: 8,
         paddingBottom: 40,
         elevation: 20,
         zIndex: 120,
