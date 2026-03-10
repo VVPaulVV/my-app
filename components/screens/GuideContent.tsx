@@ -51,7 +51,7 @@ export function GuideContent({ onClose }: { onClose?: () => void }) {
                     <View style={styles.horizontalRow}>
                         <View style={[styles.sideIconWrapper, { backgroundColor: theme.cardBackground, shadowColor: theme.primary }]}>
                             <Image
-                                source={require('@/assets/images/transport/ticket-machine.png')}
+                                source={require('@/assets/images/transport/new_ticket_machine.png')}
                                 style={styles.sideMachineIcon}
                                 resizeMode="contain"
                             />
@@ -77,7 +77,7 @@ export function GuideContent({ onClose }: { onClose?: () => void }) {
                     <View style={styles.horizontalRow}>
                         <View style={[styles.sideIconWrapper, { backgroundColor: theme.cardBackground, shadowColor: theme.primary }]}>
                             <Image
-                                source={require('@/assets/images/transport/validation-machine.png')}
+                                source={require('@/assets/images/transport/new_validation_machine.png')}
                                 style={styles.sideValidationIcon}
                                 resizeMode="contain"
                             />
